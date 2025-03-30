@@ -24,7 +24,7 @@ const dungeonRanks = [
 ]
 
 // Test durations in minutes
-const testDurations = [1, 2, 3, 5, 10, 15]
+const testDurations = [0.5, 1, 2, 3, 5, 10, 15]
 
 export default function TypingTest() {
   const [selectedDuration, setSelectedDuration] = useState(1)
@@ -162,11 +162,16 @@ export default function TypingTest() {
 
   // End test
   const endTest = () => {
-    setIsTestActive(false)
-    setTestCompleted(true)
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
+    setIsTestActive(false)
+    setTestCompleted(true)
+    setTypedText("")
+    setActiveKeys([])
+    setProgress(0)
+    setCurrentTextIndex(0)
+    setGlobalTypingSpeed("slow")
   }
 
   // Move to next text
@@ -266,17 +271,34 @@ export default function TypingTest() {
     return `${mins}:${secs.toString().padStart(2, "0")}`
   }
 
+  // Format duration
+  const formatDuration = (duration: number) => {
+    if (duration === 0.5) return "30s"
+    return `${duration}m`
+  }
+
   // Render text with highlighting
   const renderText = () => {
+    if (!currentText) return null
+
     return currentText.split("").map((char, index) => {
-      let className = ""
-      if (index < typedText.length) {
-        className = typedText[index] === char ? "correct" : "incorrect"
-      } else if (index === typedText.length) {
-        className = "current"
-      }
+      const isCorrect = typedText[index] === char
+      const isTyped = index < typedText.length
+      const isCurrent = index === typedText.length
+
       return (
-        <span key={index} className={className}>
+        <span
+          key={index}
+          className={`${
+            isTyped
+              ? isCorrect
+                ? "text-green-500"
+                : "text-red-500"
+              : isCurrent
+              ? "text-solo-purple-light underline"
+              : "text-gray-400"
+          }`}
+        >
           {char}
         </span>
       )
@@ -285,33 +307,48 @@ export default function TypingTest() {
 
   // Get background effect based on rank
   const getRankEffect = () => {
-    if (typingSpeed === "fast") {
-      return "shadow-[0_0_30px_rgba(59,130,246,0.3)]"
-    }
-
     switch (selectedRank) {
       case "s":
-        return "shadow-[0_0_30px_rgba(245,158,11,0.2)]"
+        return "s-rank-glow"
       case "a":
-        return "shadow-[0_0_30px_rgba(236,72,153,0.2)]"
+        return "a-rank-glow"
       case "b":
-        return "shadow-[0_0_30px_rgba(139,92,246,0.2)]"
+        return "b-rank-glow"
       case "c":
-        return "shadow-[0_0_30px_rgba(59,130,246,0.2)]"
+        return "c-rank-glow"
       case "d":
-        return "shadow-[0_0_30px_rgba(16,185,129,0.2)]"
+        return "d-rank-glow"
+      case "e":
+        return "e-rank-glow"
       default:
-        return "shadow-[0_0_30px_rgba(107,114,128,0.2)]"
+        return ""
     }
   }
 
   const handleRetry = () => {
     setTestCompleted(false)
-    startTest()
+    setWpm(0)
+    setAccuracy(100)
+    setCompletedCharacters(0)
+    setTypedText("")
+    setActiveKeys([])
+    setProgress(0)
+    setCurrentTextIndex(0)
+    setTimeLeft(selectedDuration * 60)
+    setGlobalTypingSpeed("slow")
   }
 
   const handleNewTest = () => {
     setTestCompleted(false)
+    setWpm(0)
+    setAccuracy(100)
+    setCompletedCharacters(0)
+    setTypedText("")
+    setActiveKeys([])
+    setProgress(0)
+    setCurrentTextIndex(0)
+    setTimeLeft(selectedDuration * 60)
+    setGlobalTypingSpeed("slow")
   }
 
   return (
@@ -347,7 +384,7 @@ export default function TypingTest() {
                   onClick={() => setSelectedDuration(duration)}
                   disabled={isTestActive}
                 >
-                  {duration} min
+                  {formatDuration(duration)}
                 </Button>
               ))}
             </div>

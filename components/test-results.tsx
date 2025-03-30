@@ -63,7 +63,7 @@ export default function TestResults({
       <div className="text-center mb-8">
         <h2 className="solo-font text-3xl font-bold glow-text mb-2">Test Complete!</h2>
         <p className="text-gray-300">
-          You've completed a {duration}-minute typing test at {getRankName(rank)} difficulty.
+          You've completed a {duration === 0.5 ? "30-second" : `${duration}-minute`} typing test at {getRankName(rank)} difficulty.
         </p>
       </div>
 
