@@ -1,0 +1,69 @@
+/* Flame effects for top typists */
+.flames-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  overflow: hidden;
+}
+
+.flame {
+  position: absolute;
+  bottom: -10px;
+  width: 15px;
+  height: 60px;
+  border-radius: 50% 50% 20% 20%;
+  transform-origin: center bottom;
+  opacity: 0.7;
+  filter: blur(5px);
+  animation: flicker 1.5s infinite alternate;
+}
+
+.flame-gold .flame {
+  background: linear-gradient(to top, rgba(245, 158, 11, 0), rgba(245, 158, 11, 0.7));
+  box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.3);
+}
+
+.flame-silver .flame {
+  background: linear-gradient(to top, rgba(148, 163, 184, 0), rgba(148, 163, 184, 0.7));
+  box-shadow: 0 0 15px 5px rgba(148, 163, 184, 0.3);
+}
+163,184,0),
+rgba(148,163,184,0.7)
+)
+;
+box-shadow: 0 0 15px 5px rgba(148, 163, 184, 0.3
+)
+;
+}
+
+.flame-bronze .flame {
+  background: linear-gradient(to top, rgba(180, 83, 9, 0), rgba(180, 83, 9, 0.7));
+  box-shadow: 0 0 15px 5px rgba(180, 83, 9, 0.3);
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    height: 60px;
+    opacity: 0.7;
+  }
+  50% {
+    height: 50px;
+    opacity: 0.5;
+  }
+}
+
+/* Leaderboard table hover effects */
+.table-row-hover:hover {
+  background-color: rgba(139, 92, 246, 0.1);
+  transition: background-color 0.2s ease;
+}
+
+/* Coming soon blur effect */
+.blur-overlay {
+  backdrop-filter: blur(4px);
+  background-color: rgba(10, 10, 10, 0.7);
+}
+

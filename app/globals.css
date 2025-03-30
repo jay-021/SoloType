@@ -1,0 +1,354 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 5%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 270 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 50% 20%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 270 70% 70%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 100% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 270 70% 50%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-solo-black text-foreground;
+  }
+}
+
+@font-face {
+  font-family: "SoloLeveling";
+  src: url("/fonts/solo-leveling.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+.solo-font {
+  font-family: "SoloLeveling", sans-serif;
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.7), 0 0 20px rgba(139, 92, 246, 0.5);
+}
+
+.glow-box {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+}
+
+.particles-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  top: 0;
+  left: 0;
+  z-index: 0;
+}
+
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: rgba(139, 92, 246, 0.5);
+  border-radius: 50%;
+  animation-name: particles;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Add glowing eyes effect styles */
+.eyes-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+
+.eyes-container.visible {
+  opacity: 0.3;
+}
+
+.eye {
+  position: absolute;
+  width: 60px;
+  height: 30px;
+  border-radius: 50%;
+  filter: blur(5px);
+  animation: glow 3s infinite alternate;
+}
+
+.eye-left {
+  top: 30%;
+  left: 25%;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, rgba(139, 92, 246, 0) 70%);
+  box-shadow: 0 0 20px 10px rgba(139, 92, 246, 0.3);
+}
+
+.eye-right {
+  top: 30%;
+  right: 25%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 70%);
+  box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Add these styles to the existing eyes effect styles */
+
+.eye-blue {
+  animation: glow-blue 3s infinite alternate !important;
+}
+
+@keyframes glow-blue {
+  0% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1.1);
+  }
+}
+
+/* Keyboard styles */
+.keyboard-container {
+  display: grid;
+  grid-template-rows: repeat(5, 1fr);
+  gap: 8px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  min-width: 40px;
+  padding: 0 10px;
+  border-radius: 6px;
+  background-color: rgba(45, 55, 72, 0.5);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  color: white;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.key:hover {
+  background-color: rgba(45, 55, 72, 0.7);
+}
+
+.key.active {
+  background-color: rgba(139, 92, 246, 0.5);
+  border-color: rgba(139, 92, 246, 0.8);
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+  transform: translateY(2px);
+}
+
+.key.space {
+  width: 300px;
+}
+
+.key.wide {
+  min-width: 80px;
+}
+
+/* Typing test styles */
+.typing-text {
+  font-family: monospace;
+  font-size: 1.5rem;
+  line-height: 2.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.typing-text span {
+  position: relative;
+}
+
+.typing-text span.correct {
+  color: #8b5cf6;
+}
+
+.typing-text span.incorrect {
+  color: #ef4444;
+  text-decoration: underline;
+}
+
+.typing-text span.current {
+  background-color: rgba(139, 92, 246, 0.2);
+}
+
+.typing-text span.current::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #8b5cf6;
+  animation: blink 1s infinite;
+}
+
+/* Dungeon rank styles */
+.dungeon-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.dungeon-rank.e-rank {
+  background-color: #6b7280;
+  border: 2px solid #9ca3af;
+}
+
+.dungeon-rank.d-rank {
+  background-color: #10b981;
+  border: 2px solid #34d399;
+}
+
+.dungeon-rank.c-rank {
+  background-color: #3b82f6;
+  border: 2px solid #60a5fa;
+}
+
+.dungeon-rank.b-rank {
+  background-color: #8b5cf6;
+  border: 2px solid #a78bfa;
+}
+
+.dungeon-rank.a-rank {
+  background-color: #ec4899;
+  border: 2px solid #f472b6;
+}
+
+.dungeon-rank.s-rank {
+  background-color: #f59e0b;
+  border: 2px solid #fbbf24;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+}
+
+.dungeon-rank.selected {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px currentColor;
+}
+
+/* Add these styles to the existing globals.css file */
+
+/* Dynamic color modes */
+.hunter-mode {
+  --typing-primary: 59, 130, 246; /* Blue */
+  --typing-secondary: 37, 99, 235; /* Darker blue */
+  --typing-glow: rgba(59, 130, 246, 0.3);
+  --typing-background: rgba(30, 58, 138, 0.1);
+}
+
+.shadow-mode {
+  --typing-primary: 139, 92, 246; /* Purple */
+  --typing-secondary: 124, 58, 237; /* Darker purple */
+  --typing-glow: rgba(139, 92, 246, 0.3);
+  --typing-background: rgba(91, 33, 182, 0.1);
+}
+
+/* Keyboard glow effects */
+.key-glow-blue {
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.4);
+  border-color: rgba(59, 130, 246, 0.8) !important;
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  transform: translateY(2px);
+}
+
+.key-glow-purple {
+  box-shadow: 0 0 15px rgba(139, 92, 246, 0.7), 0 0 30px rgba(139, 92, 246, 0.4);
+  border-color: rgba(139, 92, 246, 0.8) !important;
+  background-color: rgba(139, 92, 246, 0.3) !important;
+  transform: translateY(2px);
+}
+
+/* Background pulse animation */
+@keyframes backgroundPulse {
+  0% {
+    background-color: rgba(var(--typing-primary), 0.05);
+  }
+  50% {
+    background-color: rgba(var(--typing-primary), 0.1);
+  }
+  100% {
+    background-color: rgba(var(--typing-primary), 0.05);
+  }
+}
+
+.hunter-mode .typing-text,
+.shadow-mode .typing-text {
+  animation: backgroundPulse 3s infinite;
+}
+
+/* Typing text color adjustments */
+.hunter-mode .typing-text span.correct {
+  color: rgb(96, 165, 250);
+}
+
+.hunter-mode .typing-text span.incorrect {
+  color: rgb(248, 113, 113);
+}
+
+.hunter-mode .typing-text span.current {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+.hunter-mode .typing-text span.current::after {
+  background-color: rgb(59, 130, 246);
+}
+
+/* Particle animation speed adjustments */
+.hunter-mode .particle {
+  animation-duration: 10s !important;
+}
+
+.shadow-mode .particle {
+  animation-duration: 15s !important;
+}
+
+/* Background animation adjustments */
+.hunter-mode .particles-container {
+  opacity: 0.7;
+}
+
+.shadow-mode .particles-container {
+  opacity: 0.5;
+}
+
