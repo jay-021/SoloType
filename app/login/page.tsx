@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import NotificationModal from "@/components/notification-modal"
 
 // Form validation schema
 const loginSchema = z.object({
@@ -27,6 +28,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showNotification, setShowNotification] = useState(false)
 
   const {
     register,
@@ -39,6 +41,11 @@ export default function LoginPage() {
       password: "",
     },
   })
+
+  useEffect(() => {
+    // Show notification immediately when page loads
+    setShowNotification(true)
+  }, [])
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true)
@@ -59,6 +66,11 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleClose = () => {
+    setShowNotification(false)
+    router.push("/")
   }
 
   return (
@@ -177,6 +189,8 @@ export default function LoginPage() {
           <div className="system-border-bottom"></div>
         </motion.div>
       </div>
+
+      <NotificationModal isOpen={showNotification} onClose={handleClose} />
     </div>
   )
 }

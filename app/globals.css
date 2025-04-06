@@ -352,3 +352,24 @@
   opacity: 0.5;
 }
 
+/* Modal blur effect styles */
+.modal-blur-active {
+  @apply pointer-events-none select-none;
+}
+
+.modal-blur-active > *:not(.notification-modal) {
+  filter: blur(10px) !important;
+  opacity: 0.6 !important;
+  transition: all 0.3s ease-in-out !important;
+}
+
+.notification-modal {
+  @apply pointer-events-auto select-auto;
+}
+
+.notification-modal * {
+  filter: none !important;
+  opacity: 1 !important;
+  backdrop-filter: none !important;
+}
+

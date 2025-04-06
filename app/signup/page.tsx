@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/context/auth-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import NotificationModal from "@/components/notification-modal"
 
 // Form validation schema
 const signupSchema = z
@@ -45,6 +46,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [verificationStep, setVerificationStep] = useState(false)
   const [email, setEmail] = useState("")
+  const [showNotification, setShowNotification] = useState(false)
 
   const {
     register,
@@ -59,6 +61,11 @@ export default function SignupPage() {
       confirmPassword: "",
     },
   })
+
+  useEffect(() => {
+    // Show notification immediately when page loads
+    setShowNotification(true)
+  }, [])
 
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true)
@@ -93,6 +100,11 @@ export default function SignupPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleClose = () => {
+    setShowNotification(false)
+    router.push("/")
   }
 
   return (
@@ -260,6 +272,8 @@ export default function SignupPage() {
           <div className="system-border-bottom"></div>
         </motion.div>
       </div>
+
+      <NotificationModal isOpen={showNotification} onClose={handleClose} />
     </div>
   )
 }

@@ -62,27 +62,110 @@ export default function TypingTest() {
       try {
         const texts = getTextsForTest(selectedRank, selectedDuration)
         setTestTexts(texts)
-
-        // Calculate total characters for progress tracking
-        const total = texts.reduce((sum, text) => sum + text.text.length, 0)
-        setTotalCharacters(total)
+        // Set initial text
+        if (texts.length > 0) {
+          const firstText = texts[0].text
+          setCurrentText(firstText)
+          // Calculate total characters for progress tracking
+          const total = texts.reduce((sum, text) => sum + text.text.length, 0)
+          setTotalCharacters(total)
+        }
       } catch (error) {
         console.error("Error loading texts:", error)
-        // Fallback to empty array, we'll handle this later
         setTestTexts([])
       }
     }
   }, [selectedRank, selectedDuration, isTestActive])
 
-  // Set current text when test starts or when moving to next text
-  useEffect(() => {
-    if (testTexts.length > 0 && currentTextIndex < testTexts.length) {
-      setCurrentText(testTexts[currentTextIndex].text)
-    } else if (isTestActive && testTexts.length === 0) {
-      // Fallback if no texts are available
-      setCurrentText("Error loading text. Please try again.")
+  // Handle typing
+  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isTestActive) return
+
+    const typed = e.target.value
+    setTypedText(typed)
+
+    // Calculate correct characters and update stats
+    const chars = typed.split("")
+    let correctCount = 0
+    chars.forEach((char, index) => {
+      if (currentText[index] === char) {
+        correctCount++
+      }
+    })
+
+    // Update character counts
+    correctCharsRef.current = correctCount
+    totalCharsRef.current = typed.length
+
+    // Update WPM
+    const now = Date.now()
+    if (now - lastWpmUpdateRef.current > 500) {
+      const elapsedMinutes = (now - startTimeRef.current) / 60000
+      if (elapsedMinutes > 0) {
+        const currentWpm = Math.round((totalCharsRef.current / 5) / elapsedMinutes)
+        setWpm(currentWpm)
+
+        // Update typing speed category
+        if (currentWpm >= 35) {
+          setTypingSpeed("fast")
+        } else {
+          setTypingSpeed("slow")
+        }
+
+        lastWpmUpdateRef.current = now
+      }
     }
-  }, [testTexts, currentTextIndex, isTestActive])
+
+    // Calculate accuracy
+    if (totalCharsRef.current > 0) {
+      setAccuracy(Math.round((correctCharsRef.current / totalCharsRef.current) * 100))
+    }
+
+    // Update progress
+    const progressPercent = (typed.length / currentText.length) * 100
+    setProgress(Math.min(progressPercent, 100))
+
+    // Check if current text is completed
+    if (typed.length >= currentText.length) {
+      // Add completed text length to the completed characters count
+      setCompletedCharacters((prev) => prev + currentText.length)
+
+      // Move to next text
+      const nextIndex = currentTextIndex + 1
+      if (nextIndex < testTexts.length) {
+        const nextText = testTexts[nextIndex].text
+        setCurrentTextIndex(nextIndex)
+        setCurrentText(nextText)
+      } else {
+        // Load new texts
+        try {
+          const newTexts = getTextsForTest(selectedRank, selectedDuration)
+          setTestTexts((prev) => [...prev, ...newTexts])
+          const nextText = newTexts[0].text
+          setCurrentTextIndex(0)
+          setCurrentText(nextText)
+          
+          // Update total characters
+          const additionalChars = newTexts.reduce((sum, text) => sum + text.text.length, 0)
+          setTotalCharacters((prev) => prev + additionalChars)
+        } catch (error) {
+          console.error("Error loading new texts:", error)
+          endTest()
+          return
+        }
+      }
+      
+      // Reset typed text and refocus input
+      setTypedText("")
+      if (inputRef.current) {
+        inputRef.current.value = ""
+        inputRef.current.focus()
+      }
+
+      // Reset progress for new text
+      setProgress(0)
+    }
+  }
 
   // Handle timer
   useEffect(() => {
@@ -155,83 +238,6 @@ export default function TypingTest() {
       inputRef.current.blur()
       inputRef.current.focus()
     }
-  }
-
-  // Handle typing
-  const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!isTestActive) return
-
-    const typed = e.target.value
-    setTypedText(typed)
-
-    // Check if user just typed a space (moved to next word)
-    const justTypedSpace = typed.length > 0 && typed[typed.length - 1] === " "
-
-    // Calculate correct characters for the current word only
-    let correct = 0
-    let lastSpaceIndex = typed.lastIndexOf(" ")
-    let currentWordStart = lastSpaceIndex + 1
-    let targetWordStart = currentText.lastIndexOf(" ", lastSpaceIndex) + 1
-
-    // If we're at the start of the text
-    if (lastSpaceIndex === -1) {
-      currentWordStart = 0
-      targetWordStart = 0
-    }
-
-    // Calculate accuracy for current word
-    for (let i = currentWordStart; i < typed.length; i++) {
-      const targetIndex = targetWordStart + (i - currentWordStart)
-      if (targetIndex < currentText.length && typed[i] === currentText[targetIndex]) {
-        correct++
-      }
-    }
-
-    // Update the character counts
-    if (justTypedSpace) {
-      // When completing a word, add its stats to the total
-      correctCharsRef.current += correct
-      totalCharsRef.current += (typed.length - currentWordStart - 1) // -1 to exclude the space
-    } else {
-      // During word typing, combine completed words' stats with current word stats
-      correctCharsRef.current = (currentWordStart > 0 ? correctCharsRef.current : 0) + correct
-      totalCharsRef.current = (currentWordStart > 0 ? totalCharsRef.current : 0) + (typed.length - currentWordStart)
-    }
-
-    // Update WPM more frequently for responsive color changes
-    const now = Date.now()
-    if (now - lastWpmUpdateRef.current > 500) { // Update every 500ms
-      const elapsedMinutes = (now - startTimeRef.current) / 60000
-      if (elapsedMinutes > 0) {
-        const currentWpm = Math.round((totalCharsRef.current / 5) / elapsedMinutes)
-        setWpm(currentWpm)
-
-        // Update typing speed category for dynamic effects
-        if (currentWpm >= 35) {
-          setTypingSpeed("fast")
-        } else {
-          setTypingSpeed("slow")
-        }
-
-        lastWpmUpdateRef.current = now
-      }
-    }
-
-    // Calculate accuracy
-    if (totalCharsRef.current > 0) {
-      setAccuracy(Math.round((correctCharsRef.current / totalCharsRef.current) * 100))
-    }
-
-    // Check if current text is completed
-    if (typed === currentText) {
-      setTimeout(() => {
-        moveToNextText()
-      }, 300)
-    }
-
-    // Update progress
-    const progressPercent = (completedCharacters + typed.length) / totalCharacters * 100
-    setProgress(Math.min(progressPercent, 100))
   }
 
   // Add effect for updating global typing speed
@@ -337,73 +343,35 @@ export default function TypingTest() {
   const renderText = () => {
     if (!currentText) return null
 
-    const words = currentText.split(" ")
-    const typedWords = typedText.split(" ")
+    return (
+      <div className="whitespace-pre-wrap break-words">
+        {currentText.split("").map((char, index) => {
+          let className = "text-gray-400" // default untyped color
 
-    return words.map((word, wordIndex) => {
-      const isLastWord = wordIndex === words.length - 1
-      const currentTypedWord = typedWords[wordIndex] || ""
-      const isCurrentWord = wordIndex === typedWords.length - 1
-
-      // Handle characters within the word
-      const wordSpan = word.split("").map((char, charIndex) => {
-        let className = "text-gray-400" // default untyped color
-
-        if (wordIndex < typedWords.length - 1) {
-          // For completed words
-          const typedChar = typedWords[wordIndex][charIndex]
-          className = typedChar === char ? "text-green-500" : "text-red-500"
-        } else if (isCurrentWord) {
-          // For current word
-          if (charIndex < currentTypedWord.length) {
-            // For typed characters in current word
-            className = currentTypedWord[charIndex] === char ? "text-green-500" : "text-red-500"
-          } else if (charIndex === currentTypedWord.length) {
+          if (index < typedText.length) {
+            // For typed characters
+            className = typedText[index] === char ? "text-green-500" : "text-red-500"
+          } else if (index === typedText.length) {
             // Current character to type
             className = "text-solo-purple-light underline"
           }
-        }
 
-        return (
-          <span 
-            key={`${wordIndex}-${charIndex}`} 
-            className={className}
-            style={{ 
-              fontFamily: 'monospace',
-              fontSize: '1.1rem',
-              letterSpacing: '0.05rem'
-            }}
-          >
-            {char}
-          </span>
-        )
-      })
-
-      // Add space between words
-      return (
-        <span key={`word-${wordIndex}`} className="word-container" style={{ whiteSpace: 'pre' }}>
-          {wordSpan}
-          {!isLastWord && (
+          return (
             <span 
-              className={
-                wordIndex < typedWords.length - 1 
-                  ? typedWords[wordIndex].length === word.length 
-                    ? "text-green-500" 
-                    : "text-red-500"
-                  : "text-gray-400"
-              }
+              key={index} 
+              className={className}
               style={{ 
                 fontFamily: 'monospace',
                 fontSize: '1.1rem',
                 letterSpacing: '0.05rem'
               }}
             >
-              {" "}
+              {char}
             </span>
-          )}
-        </span>
-      )
-    })
+          )
+        })}
+      </div>
+    )
   }
 
   // Get background effect based on rank
@@ -586,12 +554,25 @@ export default function TypingTest() {
                 />
               </div>
 
-              <div
-                className={`p-4 rounded-md mb-4 transition-colors duration-500 ${
-                  typingSpeed === "fast" ? "bg-blue-950/50 border border-blue-500/30" : "bg-solo-black/50"
-                }`}
-              >
-                <p className="typing-text">{renderText()}</p>
+              <div className="flex-1 relative">
+                {/* Text container with proper wrapping */}
+                <div className="max-w-[800px] mx-auto p-4">
+                  <div 
+                    className="typing-text-container relative bg-solo-black/30 rounded-lg p-6"
+                    style={{ 
+                      minHeight: "150px",
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      overflowX: "hidden",
+                      lineHeight: "2",
+                      fontFamily: "monospace",
+                      fontSize: "1.1rem",
+                      letterSpacing: "0.05rem"
+                    }}
+                  >
+                    {renderText()}
+                  </div>
+                </div>
               </div>
 
               <input
