@@ -3,29 +3,25 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LogIn, UserPlus } from "lucide-react"
+import { Menu, X, LogIn, UserPlus, LogOut, User } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
-import AuthComingSoon from "@/components/auth-coming-soon"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, user, logout } = useAuth()
-
-  // Add state for the coming soon popup
-  const [showAuthPopup, setShowAuthPopup] = useState(false)
-  const [authPopupType, setAuthPopupType] = useState<"login" | "signup">("login")
+  const { isAuthenticated, user, logout, isLoading } = useAuth()
 
   const handleLogout = () => {
     logout()
-    setIsMenuOpen(false)
-  }
-
-  // Function to show the coming soon popup
-  const showComingSoon = (type: "login" | "signup") => {
-    setAuthPopupType(type)
-    setShowAuthPopup(true)
     setIsMenuOpen(false)
   }
 
@@ -69,22 +65,61 @@ export default function Header() {
             Leaderboard
           </Link>
 
-          {/* Replace the auth buttons with coming soon buttons */}
-          <Button
-            variant="outline"
-            className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white"
-            onClick={() => showComingSoon("login")}
-          >
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
-          </Button>
-          <Button
-            className="bg-solo-purple hover:bg-solo-purple-dark text-white"
-            onClick={() => showComingSoon("signup")}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Sign Up
-          </Button>
+          {isLoading ? (
+            // Show loading state
+            <div className="h-9 w-20 bg-solo-purple/20 animate-pulse rounded-md"></div>
+          ) : isAuthenticated && user ? (
+            // Show user account dropdown when authenticated
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  {user.username}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 bg-solo-black border border-solo-purple/20">
+                <DropdownMenuLabel className="text-solo-purple-light">My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-solo-purple/20" />
+                <DropdownMenuItem className="focus:bg-solo-purple/20 focus:text-white cursor-pointer">
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem className="focus:bg-solo-purple/20 focus:text-white cursor-pointer">
+                  Settings
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-solo-purple/20" />
+                <DropdownMenuItem
+                  className="text-red-500 focus:bg-red-900/20 focus:text-red-400 cursor-pointer"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            // Show auth buttons when not authenticated
+            <>
+              <Button
+                variant="outline"
+                className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white"
+                asChild
+              >
+                <Link href="/login">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Login
+                </Link>
+              </Button>
+              <Button className="bg-solo-purple hover:bg-solo-purple-dark text-white" asChild>
+                <Link href="/signup">
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Sign Up
+                </Link>
+              </Button>
+            </>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -131,29 +166,52 @@ export default function Header() {
             </Link>
 
             <div className="flex flex-col gap-2 px-4 pt-2">
-              {/* Replace the auth buttons with coming soon buttons */}
-              <Button
-                variant="outline"
-                className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white w-full"
-                onClick={() => showComingSoon("login")}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-              <Button
-                className="bg-solo-purple hover:bg-solo-purple-dark text-white w-full"
-                onClick={() => showComingSoon("signup")}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Sign Up
-              </Button>
+              {isAuthenticated && user ? (
+                // Show user info and logout button when authenticated
+                <>
+                  <div className="flex items-center gap-2 px-2 py-1">
+                    <User className="h-4 w-4 text-solo-purple-light" />
+                    <span className="text-sm font-medium">{user.username}</span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    className="bg-red-900/20 text-red-500 hover:bg-red-900/40 hover:text-red-400 w-full"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Log Out
+                  </Button>
+                </>
+              ) : (
+                // Show auth buttons when not authenticated
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white w-full"
+                    asChild
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Link href="/login">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Login
+                    </Link>
+                  </Button>
+                  <Button
+                    className="bg-solo-purple hover:bg-solo-purple-dark text-white w-full"
+                    asChild
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Link href="/signup">
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Sign Up
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
           </nav>
         </div>
       )}
-
-      {/* Auth Coming Soon Popup */}
-      <AuthComingSoon isOpen={showAuthPopup} onClose={() => setShowAuthPopup(false)} type={authPopupType} />
     </header>
   )
 }

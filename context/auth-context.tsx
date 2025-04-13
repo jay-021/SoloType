@@ -2,6 +2,16 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import SystemNotification from "@/components/system-notification"
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  signInWithPopup, 
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  updateProfile,
+  User as FirebaseUser
+} from "firebase/auth"
+import { auth, googleProvider } from "@/lib/firebase/config"
 
 /*
  * NOTE: Authentication is temporarily disabled
@@ -49,7 +59,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, username: string, password: string) => Promise<void>
-  confirmSignup: (email: string, code: string) => Promise<void>
+  signInWithGoogle: () => Promise<void>
   logout: () => void
   showNotification: (type: "signup" | "login" | "levelup" | "quest", data?: any) => void
   notificationState: {
@@ -58,245 +68,138 @@ interface AuthContextType {
     data?: any
   }
   closeNotification: () => void
+  error: string | null
+  clearError: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(false) // Changed to false since we're not actually loading
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [notificationState, setNotificationState] = useState<{
     show: boolean
     type: "signup" | "login" | "levelup" | "quest"
     data?: any
   }>({ show: false, type: "login" })
 
-  // Check for existing session on mount - temporarily disabled
+  // Derived state - no need to maintain separate state
+  const isAuthenticated = !!user
+
+  // Clear error helper
+  const clearError = () => setError(null)
+
+  // Check for existing session on mount using Firebase onAuthStateChanged
   useEffect(() => {
-    // Authentication check is disabled
-    setIsLoading(false)
-
-    /* Original implementation preserved for future use
-    const checkAuth = async () => {
-      try {
-        // Get current Cognito user
-        const cognitoUser = userPool.getCurrentUser()
-
-        if (cognitoUser) {
-          // Get session to verify authentication
-          cognitoUser.getSession((err: Error | null, session: CognitoUserSession | null) => {
-            if (err) {
-              console.error("Session error:", err)
-              setIsLoading(false)
-              return
-            }
-
-            if (session && session.isValid()) {
-              // Get user attributes
-              cognitoUser.getUserAttributes((err, attributes) => {
-                if (err) {
-                  console.error("Get attributes error:", err)
-                  setIsLoading(false)
-                  return
-                }
-
-                if (attributes) {
-                  // Create user object from attributes
-                  const userData: Partial<User> = {
-                    id: cognitoUser.getUsername(),
-                    email: attributes.find((attr) => attr.Name === "email")?.Value || "",
-                    username:
-                      attributes.find((attr) => attr.Name === "preferred_username")?.Value || cognitoUser.getUsername(),
-                    // Default values for new users
-                    rank: "e",
-                    level: 1,
-                    xp: 0,
-                    xpToNextLevel: 100,
-                    joinDate: new Date().toISOString(),
-                    completedQuests: 0,
-                    isFirstLogin: attributes.find((attr) => attr.Name === "custom:first_login")?.Value === "true",
-                    role:
-                      (attributes.find((attr) => attr.Name === "custom:role")?.Value as "player" | "admin") || "player",
-                  }
-
-                  setUser(userData as User)
-                  setIsAuthenticated(true)
-                }
-
-                setIsLoading(false)
-              })
-            } else {
-              setIsLoading(false)
-            }
-          })
-        } else {
-          setIsLoading(false)
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      setIsLoading(true)
+      
+      if (authUser) {
+        // User is signed in
+        setFirebaseUser(authUser)
+        
+        // Create our app's user object from Firebase user
+        const userData: User = {
+          id: authUser.uid,
+          username: authUser.displayName || authUser.email?.split('@')[0] || 'Hunter',
+          email: authUser.email || '',
+          // Default values for new users
+          rank: "e",
+          level: 1,
+          xp: 0,
+          xpToNextLevel: 100,
+          joinDate: new Date().toISOString(),
+          completedQuests: 0,
+          isFirstLogin: false, // Will be updated once we have a database
+          role: "player",
         }
-      } catch (error) {
-        console.error("Authentication error:", error)
-        setIsLoading(false)
+        
+        setUser(userData)
+      } else {
+        // User is signed out
+        setFirebaseUser(null)
+        setUser(null)
       }
-    }
+      
+      setIsLoading(false)
+    })
 
-    checkAuth()
-    */
+    // Cleanup subscription
+    return () => unsubscribe()
   }, [])
 
-  // Sign up with AWS Cognito - temporarily disabled
+  // Sign up with Firebase
   const signup = async (email: string, username: string, password: string) => {
-    console.log("Signup functionality is coming soon")
-    return Promise.resolve()
-
-    /* Original implementation preserved for future use
     setIsLoading(true)
+    clearError()
 
-    return new Promise<void>((resolve, reject) => {
-      // Prepare attributes
-      const attributeList = [
-        new CognitoUserAttribute({ Name: "email", Value: email }),
-        new CognitoUserAttribute({ Name: "preferred_username", Value: username }),
-        new CognitoUserAttribute({ Name: "custom:rank", Value: "e" }),
-        new CognitoUserAttribute({ Name: "custom:level", Value: "1" }),
-        new CognitoUserAttribute({ Name: "custom:first_login", Value: "true" }),
-        new CognitoUserAttribute({ Name: "custom:role", Value: "player" }),
-      ]
-
-      // Sign up the user
-      userPool.signUp(email, password, attributeList, [], (err, result) => {
-        setIsLoading(false)
-
-        if (err) {
-          console.error("Signup error:", err)
-          reject(err)
-          return
-        }
-
-        if (result) {
-          // Show signup notification
-          showNotification("signup")
-          resolve()
-        }
+    try {
+      // Create the user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Update the profile to include the username
+      await updateProfile(userCredential.user, {
+        displayName: username
       })
-    })
-    */
-  }
-
-  // Confirm signup with verification code - temporarily disabled
-  const confirmSignup = async (email: string, code: string) => {
-    console.log("Confirm signup functionality is coming soon")
-    return Promise.resolve()
-
-    /* Original implementation preserved for future use
-    return new Promise<void>((resolve, reject) => {
-      const userData = {
-        Username: email,
-        Pool: userPool,
-      }
-
-      const cognitoUser = new CognitoUser(userData)
-
-      cognitoUser.confirmRegistration(code, true, (err, result) => {
-        if (err) {
-          console.error("Confirm signup error:", err)
-          reject(err)
-          return
-        }
-
-        resolve()
-      })
-    })
-    */
-  }
-
-  // Login with AWS Cognito - temporarily disabled
-  const login = async (email: string, password: string) => {
-    console.log("Login functionality is coming soon")
-    return Promise.resolve()
-
-    /* Original implementation preserved for future use
-    setIsLoading(true)
-
-    return new Promise<void>((resolve, reject) => {
-      const authenticationDetails = new AuthenticationDetails({
-        Username: email,
-        Password: password,
-      })
-
-      const userData = {
-        Username: email,
-        Pool: userPool,
-      }
-
-      const cognitoUser = new CognitoUser(userData)
-
-      cognitoUser.authenticateUser(authenticationDetails, {
-        onSuccess: (session) => {
-          // Get user attributes
-          cognitoUser.getUserAttributes((err, attributes) => {
-            setIsLoading(false)
-
-            if (err) {
-              console.error("Get attributes error:", err)
-              reject(err)
-              return
-            }
-
-            if (attributes) {
-              // Create user object from attributes
-              const userData: Partial<User> = {
-                id: cognitoUser.getUsername(),
-                email: attributes.find((attr) => attr.Name === "email")?.Value || "",
-                username:
-                  attributes.find((attr) => attr.Name === "preferred_username")?.Value || cognitoUser.getUsername(),
-                // Get custom attributes or use defaults
-                rank: (attributes.find((attr) => attr.Name === "custom:rank")?.Value || "e") as any,
-                level: Number.parseInt(attributes.find((attr) => attr.Name === "custom:level")?.Value || "1"),
-                xp: Number.parseInt(attributes.find((attr) => attr.Name === "custom:xp")?.Value || "0"),
-                xpToNextLevel: Number.parseInt(
-                  attributes.find((attr) => attr.Name === "custom:xp_to_next_level")?.Value || "100",
-                ),
-                joinDate:
-                  attributes.find((attr) => attr.Name === "custom:join_date")?.Value || new Date().toISOString(),
-                completedQuests: Number.parseInt(
-                  attributes.find((attr) => attr.Name === "custom:completed_quests")?.Value || "0",
-                ),
-                isFirstLogin: attributes.find((attr) => attr.Name === "custom:first_login")?.Value === "true",
-                role: (attributes.find((attr) => attr.Name === "custom:role")?.Value as "player" | "admin") || "player",
-              }
-
-              setUser(userData as User)
-              setIsAuthenticated(true)
-
-              // Show login notification
-              showNotification("login")
-              resolve()
-            }
-          })
-        },
-        onFailure: (err) => {
-          setIsLoading(false)
-          console.error("Login error:", err)
-          reject(err)
-        },
-      })
-    })
-    */
-  }
-
-  // Logout - temporarily simplified
-  const logout = () => {
-    setUser(null)
-    setIsAuthenticated(false)
-
-    /* Original implementation preserved for future use
-    const cognitoUser = userPool.getCurrentUser()
-    if (cognitoUser) {
-      cognitoUser.signOut()
-      setUser(null)
-      setIsAuthenticated(false)
+      
+      // Show signup notification
+      showNotification("signup")
+    } catch (err: any) {
+      console.error("Signup error:", err)
+      setError(err.message || "Failed to create account. Please try again.")
+      throw err
+    } finally {
+      setIsLoading(false)
     }
-    */
+  }
+
+  // Login with Firebase
+  const login = async (email: string, password: string) => {
+    setIsLoading(true)
+    clearError()
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password)
+      // Show login notification
+      showNotification("login")
+    } catch (err: any) {
+      console.error("Login error:", err)
+      setError(err.message || "Invalid email or password. Please try again.")
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Sign in with Google
+  const signInWithGoogle = async () => {
+    setIsLoading(true)
+    clearError()
+
+    try {
+      await signInWithPopup(auth, googleProvider)
+      // Show login notification
+      showNotification("login")
+    } catch (err: any) {
+      console.error("Google sign-in error:", err)
+      setError(err.message || "Failed to sign in with Google. Please try again.")
+      throw err
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Logout from Firebase
+  const logout = () => {
+    firebaseSignOut(auth)
+      .then(() => {
+        setUser(null)
+      })
+      .catch((error) => {
+        console.error("Logout error:", error)
+      })
   }
 
   // Show system notification
@@ -317,11 +220,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         login,
         signup,
-        confirmSignup,
+        signInWithGoogle,
         logout,
         showNotification,
         notificationState,
         closeNotification,
+        error,
+        clearError,
       }}
     >
       {children}
