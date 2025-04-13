@@ -1,237 +1,126 @@
 "use client"
 
-import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
-import { motion } from "framer-motion"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import { ArrowLeft, AlertCircle, Send } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-// Form validation schema
-const forgotPasswordSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
-})
-
-type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+import { ArrowLeft, Loader2, Mail } from "lucide-react"
+import { sendPasswordResetEmail } from "firebase/auth"
+import { auth } from "@/lib/firebase/config"
 
 export default function ForgotPasswordPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  const [verificationStep, setVerificationStep] = useState(false)
-  const [email, setEmail] = useState("")
+  const [success, setSuccess] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<ForgotPasswordFormValues>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
-  })
-
-  const onSubmit = async (data: ForgotPasswordFormValues) => {
-    setIsLoading(true)
-    setError(null)
-    setSuccess(null)
-
-    try {
-      // This would be replaced with actual AWS Cognito forgotPassword call
-      // For now, we'll simulate a successful request
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setEmail(data.email)
-      setVerificationStep(true)
-      setSuccess("Reset code sent to your email. Please check your inbox.")
-    } catch (error: any) {
-      console.error("Forgot password error:", error)
-      setError(error.message || "An error occurred. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleResetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
     setError(null)
-    setSuccess(null)
-
-    const formData = new FormData(e.currentTarget)
-    const code = formData.get("code") as string
-    const newPassword = formData.get("newPassword") as string
-    const confirmPassword = formData.get("confirmPassword") as string
-
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match")
-      setIsLoading(false)
-      return
-    }
+    setSuccess(false)
+    setIsLoading(true)
 
     try {
-      // This would be replaced with actual AWS Cognito confirmForgotPassword call
-      // For now, we'll simulate a successful request
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      setSuccess("Password reset successful. You can now login with your new password.")
+      await sendPasswordResetEmail(auth, email)
+      setSuccess(true)
     } catch (error: any) {
-      console.error("Reset password error:", error)
-      setError(error.message || "An error occurred. Please try again.")
+      console.error("Password reset error:", error)
+      setError(error.message || "Failed to send reset email. Please try again.")
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <div className="system-background"></div>
-
-      <div className="container max-w-md mx-auto px-4 py-8 flex-1 flex flex-col justify-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-6"
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="absolute top-4 left-4">
+        <Button
+          variant="ghost"
+          className="flex items-center text-sm text-gray-400 hover:text-white"
+          onClick={() => router.push("/login")}
         >
-          <Button asChild variant="ghost" className="mb-6 text-cyan-300 hover:text-cyan-100 hover:bg-transparent">
-            <Link href="/login">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Login
-            </Link>
-          </Button>
-          <h1 className="text-3xl font-bold text-center mb-2 system-text">
-            {verificationStep ? "RESET PASSWORD" : "FORGOT PASSWORD"}
-          </h1>
-          <p className="text-center text-gray-400 mb-8">
-            {verificationStep
-              ? "Enter the verification code and your new password"
-              : "Enter your email to receive a password reset code"}
-          </p>
-        </motion.div>
-
-        {error && (
-          <Alert variant="destructive" className="mb-6 bg-red-950/50 border-red-800">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {success && (
-          <Alert className="mb-6 bg-green-950/50 border-green-800">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="system-container"
-        >
-          <div className="system-border-top"></div>
-
-          <div className="system-content p-6">
-            {verificationStep ? (
-              <form onSubmit={handleResetPassword} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="code" className="block text-sm font-medium text-cyan-300">
-                    Verification Code
-                  </label>
-                  <div className="system-input-container">
-                    <Input
-                      id="code"
-                      name="code"
-                      placeholder="Enter verification code"
-                      className="system-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="newPassword" className="block text-sm font-medium text-cyan-300">
-                    New Password
-                  </label>
-                  <div className="system-input-container">
-                    <Input
-                      id="newPassword"
-                      name="newPassword"
-                      type="password"
-                      placeholder="Enter new password"
-                      className="system-input"
-                      required
-                      minLength={8}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-cyan-300">
-                    Confirm Password
-                  </label>
-                  <div className="system-input-container">
-                    <Input
-                      id="confirmPassword"
-                      name="confirmPassword"
-                      type="password"
-                      placeholder="Confirm new password"
-                      className="system-input"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <Button type="submit" className="w-full system-button" disabled={isLoading}>
-                  {isLoading ? "Resetting..." : "Reset Password"}
-                </Button>
-              </form>
-            ) : (
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-cyan-300">
-                    Email
-                  </label>
-                  <div className="system-input-container">
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      className="system-input"
-                      {...register("email")}
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
-                </div>
-
-                <Button type="submit" className="w-full system-button" disabled={isLoading}>
-                  <Send className="mr-2 h-4 w-4" />
-                  {isLoading ? "Sending..." : "Send Reset Code"}
-                </Button>
-              </form>
-            )}
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-400">
-                Remember your password?{" "}
-                <Link href="/login" className="text-cyan-300 hover:text-cyan-100">
-                  Login here
-                </Link>
-              </p>
-            </div>
-          </div>
-
-          <div className="system-border-bottom"></div>
-        </motion.div>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Login
+        </Button>
       </div>
+
+      <Card className="w-full max-w-md backdrop-blur-lg bg-solo-black/90 border-solo-purple/30">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl font-bold text-center text-solo-purple-light">
+            Reset Password
+          </CardTitle>
+          <CardDescription className="text-center">
+            Enter your email address and we'll send you a password reset link
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {error && (
+            <Alert variant="destructive" className="bg-red-900/20 border-red-900 text-red-300">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {success ? (
+            <Alert className="bg-green-900/20 border-green-900 text-green-300">
+              <AlertDescription>
+                Password reset email sent! Check your inbox for further instructions.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <form onSubmit={handleResetPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-solo-darkgray border-solo-purple/30 focus:border-solo-purple"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-solo-purple hover:bg-solo-purple-dark"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sending email...
+                  </>
+                ) : (
+                  <>
+                    <Mail className="mr-2 h-4 w-4" />
+                    Send Reset Link
+                  </>
+                )}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+        <CardFooter>
+          <div className="text-sm text-center w-full text-gray-400">
+            Remember your password?{" "}
+            <Link href="/login" className="text-solo-purple hover:text-solo-purple-light">
+              Sign in
+            </Link>
+          </div>
+        </CardFooter>
+      </Card>
     </div>
   )
 }

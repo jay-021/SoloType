@@ -3,34 +3,38 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LogIn, UserPlus } from "lucide-react"
-import { usePathname } from "next/navigation"
+import { Menu, X, LogIn, UserPlus, LogOut, User } from "lucide-react"
+import { usePathname, useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
-import AuthComingSoon from "@/components/auth-coming-soon"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
-  const { isAuthenticated, user, logout } = useAuth()
+  const router = useRouter()
+  const { user, loading, signOut } = useAuth()
 
-  // Add state for the coming soon popup
-  const [showAuthPopup, setShowAuthPopup] = useState(false)
-  const [authPopupType, setAuthPopupType] = useState<"login" | "signup">("login")
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User'
 
-  const handleLogout = () => {
-    logout()
-    setIsMenuOpen(false)
-  }
-
-  // Function to show the coming soon popup
-  const showComingSoon = (type: "login" | "signup") => {
-    setAuthPopupType(type)
-    setShowAuthPopup(true)
-    setIsMenuOpen(false)
+  const handleLogout = async () => {
+    try {
+      await signOut()
+      router.push('/')
+      setIsMenuOpen(false)
+    } catch (error) {
+      console.error("Error signing out:", error)
+    }
   }
 
   // Don't show header on auth pages
-  if (pathname === "/login" || pathname === "/signup" || pathname === "/guide" || pathname === "/forgot-password") {
+  if (pathname === "/login" || pathname === "/signup" || pathname === "/forgot-password") {
     return null
   }
 
@@ -69,22 +73,50 @@ export default function Header() {
             Leaderboard
           </Link>
 
-          {/* Replace the auth buttons with coming soon buttons */}
-          <Button
-            variant="outline"
-            className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white"
-            onClick={() => showComingSoon("login")}
-          >
-            <LogIn className="mr-2 h-4 w-4" />
-            Login
-          </Button>
-          <Button
-            className="bg-solo-purple hover:bg-solo-purple-dark text-white"
-            onClick={() => showComingSoon("signup")}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Sign Up
-          </Button>
+          {/* Auth Buttons */}
+          {!loading && (
+            <>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="border-solo-purple-light text-solo-purple-light">
+                      <User className="mr-2 h-4 w-4" />
+                      {displayName}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="bg-solo-black border-solo-purple/20">
+                    <DropdownMenuLabel>Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      className="cursor-pointer hover:bg-solo-purple/20"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white"
+                    onClick={() => router.push('/login')}
+                  >
+                    <LogIn className="mr-2 h-4 w-4" />
+                    Login
+                  </Button>
+                  <Button
+                    className="bg-solo-purple hover:bg-solo-purple-dark text-white"
+                    onClick={() => router.push('/signup')}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Sign Up
+                  </Button>
+                </>
+              )}
+            </>
+          )}
         </nav>
 
         {/* Mobile Menu Button */}
@@ -131,29 +163,48 @@ export default function Header() {
             </Link>
 
             <div className="flex flex-col gap-2 px-4 pt-2">
-              {/* Replace the auth buttons with coming soon buttons */}
-              <Button
-                variant="outline"
-                className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white w-full"
-                onClick={() => showComingSoon("login")}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-              <Button
-                className="bg-solo-purple hover:bg-solo-purple-dark text-white w-full"
-                onClick={() => showComingSoon("signup")}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Sign Up
-              </Button>
+              {/* Auth Buttons */}
+              {!loading && (
+                <>
+                  {user ? (
+                    <Button
+                      className="bg-solo-purple hover:bg-solo-purple-dark text-white w-full"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out ({displayName})
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        variant="outline"
+                        className="border-solo-purple-light text-solo-purple-light hover:bg-solo-purple hover:text-white w-full"
+                        onClick={() => {
+                          router.push('/login')
+                          setIsMenuOpen(false)
+                        }}
+                      >
+                        <LogIn className="mr-2 h-4 w-4" />
+                        Login
+                      </Button>
+                      <Button
+                        className="bg-solo-purple hover:bg-solo-purple-dark text-white w-full"
+                        onClick={() => {
+                          router.push('/signup')
+                          setIsMenuOpen(false)
+                        }}
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Sign Up
+                      </Button>
+                    </>
+                  )}
+                </>
+              )}
             </div>
           </nav>
         </div>
       )}
-
-      {/* Auth Coming Soon Popup */}
-      <AuthComingSoon isOpen={showAuthPopup} onClose={() => setShowAuthPopup(false)} type={authPopupType} />
     </header>
   )
 }

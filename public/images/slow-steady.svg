@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Graph Background -->
+  <rect x="50" y="50" width="300" height="200" fill="#4A4A4A" rx="10"/>
+  
+  <!-- Graph Line -->
+  <path d="M80 220 L120 180 L160 160 L200 140 L240 120" stroke="#4CAF50" stroke-width="3" fill="none"/>
+  
+  <!-- Graph Points -->
+  <circle cx="80" cy="220" r="5" fill="#4CAF50"/>
+  <circle cx="120" cy="180" r="5" fill="#4CAF50"/>
+  <circle cx="160" cy="160" r="5" fill="#4CAF50"/>
+  <circle cx="200" cy="140" r="5" fill="#4CAF50"/>
+  <circle cx="240" cy="120" r="5" fill="#4CAF50"/>
+  
+  <!-- Labels -->
+  <text x="70" y="240" fill="white" font-family="Arial" font-size="12">Slow</text>
+  <text x="230" y="240" fill="white" font-family="Arial" font-size="12">Steady</text>
+  
+  <!-- Turtle -->
+  <circle cx="300" cy="250" r="20" fill="#4A4A4A"/>
+  <circle cx="305" cy="245" r="5" fill="white"/>
+  <circle cx="305" cy="245" r="2" fill="black"/>
+  <path d="M290 250 L310 250" stroke="#4A4A4A" stroke-width="3"/>
+</svg> 

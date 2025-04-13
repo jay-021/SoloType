@@ -6,8 +6,8 @@ export function middleware(request: NextRequest) {
   // Get the pathname of the request
   const path = request.nextUrl.pathname
 
-  // Check if the path is one of the auth pages that are temporarily disabled
-  if (path === "/login" || path === "/signup" || path === "/guide" || path === "/forgot-password") {
+  // Only redirect the guide page, as login and signup are now functional
+  if (path === "/guide" || path === "/forgot-password") {
     // Redirect to the home page
     return NextResponse.redirect(new URL("/", request.url))
   }
@@ -16,8 +16,8 @@ export function middleware(request: NextRequest) {
   return NextResponse.next()
 }
 
-// See "Matching Paths" below to learn more
+// Updated matcher to only target restricted pages
 export const config = {
-  matcher: ["/login", "/signup", "/guide", "/forgot-password"],
+  matcher: ["/guide", "/forgot-password"],
 }
 

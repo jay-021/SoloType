@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Keyboard Base -->
+  <rect x="50" y="150" width="300" height="100" fill="#4A4A4A" rx="10"/>
+  
+  <!-- Home Row Keys -->
+  <rect x="70" y="170" width="40" height="40" fill="#6A6A6A" rx="5"/>
+  <rect x="120" y="170" width="40" height="40" fill="#6A6A6A" rx="5"/>
+  <rect x="170" y="170" width="40" height="40" fill="#6A6A6A" rx="5"/>
+  <rect x="220" y="170" width="40" height="40" fill="#6A6A6A" rx="5"/>
+  <rect x="270" y="170" width="40" height="40" fill="#6A6A6A" rx="5"/>
+  
+  <!-- Key Labels -->
+  <text x="85" y="195" fill="white" font-family="Arial" font-size="16">A</text>
+  <text x="135" y="195" fill="white" font-family="Arial" font-size="16">S</text>
+  <text x="185" y="195" fill="white" font-family="Arial" font-size="16">D</text>
+  <text x="235" y="195" fill="white" font-family="Arial" font-size="16">F</text>
+  <text x="285" y="195" fill="white" font-family="Arial" font-size="16">J</text>
+  
+  <!-- Finger Indicators -->
+  <circle cx="90" cy="130" r="5" fill="#FF6B6B"/>
+  <circle cx="140" cy="130" r="5" fill="#FF6B6B"/>
+  <circle cx="190" cy="130" r="5" fill="#FF6B6B"/>
+  <circle cx="240" cy="130" r="5" fill="#FF6B6B"/>
+  <circle cx="290" cy="130" r="5" fill="#FF6B6B"/>
+</svg> 

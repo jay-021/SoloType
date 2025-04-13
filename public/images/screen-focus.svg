@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="300" viewBox="0 0 400 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Monitor -->
+  <rect x="50" y="50" width="300" height="200" fill="#4A4A4A" rx="10"/>
+  <rect x="60" y="60" width="280" height="180" fill="#2A2A2A"/>
+  
+  <!-- Text on Screen -->
+  <text x="80" y="100" fill="white" font-family="monospace" font-size="16">The quick brown fox jumps over the lazy dog</text>
+  <text x="80" y="130" fill="white" font-family="monospace" font-size="16">Practice typing without looking at your hands</text>
+  
+  <!-- Eyes -->
+  <circle cx="150" cy="250" r="10" fill="#4A4A4A"/>
+  <circle cx="250" cy="250" r="10" fill="#4A4A4A"/>
+  
+  <!-- Arrow -->
+  <path d="M200 200 L200 240" stroke="#FF6B6B" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#FF6B6B"/>
+    </marker>
+  </defs>
+</svg> 
