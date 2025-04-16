@@ -27,7 +27,7 @@ interface TestResult {
   accuracy: number
   rank: 'e' | 'd' | 'c' | 'b' | 'a' | 's'
   testDuration: number
-  completedCharacters: number
+  wordsTyped: number
   timestamp: string
 }
 
@@ -205,7 +205,7 @@ export default function HistoryPage() {
                 <TableHead className="text-right">WPM</TableHead>
                 <TableHead className="text-right">Accuracy</TableHead>
                 <TableHead className="text-right">Duration</TableHead>
-                <TableHead className="text-right">Characters</TableHead>
+                <TableHead className="text-right">Words</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -220,7 +220,7 @@ export default function HistoryPage() {
                   <TableCell className="text-right">
                     {result.testDuration === 0.5 ? '30 sec' : `${result.testDuration} min`}
                   </TableCell>
-                  <TableCell className="text-right">{result.completedCharacters}</TableCell>
+                  <TableCell className="text-right">{result.wordsTyped}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

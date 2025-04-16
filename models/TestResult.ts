@@ -23,7 +23,7 @@ const TestResultSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  completedCharacters: {
+  wordsTyped: {
     type: Number,
     required: true
   },

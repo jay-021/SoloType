@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You can @ files here
+- You can use markdown but dont have to
+always prefer to use pnpm insted of NPM because in the whole project we are using pnpm to install dependences and othercomponenets.
+~do not enter twoo commandsa at once, enter one by one

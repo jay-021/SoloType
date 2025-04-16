@@ -7,7 +7,7 @@ export interface TestResultInput {
   accuracy: number
   rank: string
   testDuration: number
-  completedCharacters: number
+  wordsTyped: number
 }
 
 export interface TestResult extends TestResultInput {
@@ -80,7 +80,7 @@ function validateTestResult(data: TestResultInput): boolean {
     ['e', 'd', 'c', 'b', 'a', 's'].includes(data.rank.toLowerCase()) &&
     typeof data.testDuration === 'number' &&
     data.testDuration > 0 &&
-    typeof data.completedCharacters === 'number' &&
-    data.completedCharacters >= 0
+    typeof data.wordsTyped === 'number' &&
+    data.wordsTyped >= 0
   )
 } 

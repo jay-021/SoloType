@@ -9,7 +9,7 @@ interface TestResultsProps {
   accuracy: number
   duration: number
   rank: string
-  charactersTyped: number
+  wordsTyped: number
   onRetry: () => void
   onNewTest: () => void
 }
@@ -19,7 +19,7 @@ export default function TestResults({
   accuracy,
   duration,
   rank,
-  charactersTyped,
+  wordsTyped,
   onRetry,
   onNewTest,
 }: TestResultsProps) {
@@ -88,8 +88,8 @@ export default function TestResults({
 
         <div className="p-4 bg-solo-black/50 rounded-md flex flex-col items-center">
           <Trophy className="h-8 w-8 text-solo-purple-light mb-2" />
-          <div className="text-sm text-gray-300">Characters Typed</div>
-          <div className="text-3xl font-mono">{charactersTyped}</div>
+          <div className="text-sm text-gray-300">Words Typed</div>
+          <div className="text-3xl font-mono">{wordsTyped}</div>
         </div>
       </div>
 

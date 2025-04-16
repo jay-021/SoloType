@@ -49,16 +49,16 @@ export default function TypingTest() {
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const [currentText, setCurrentText] = useState("")
   const [typedText, setTypedText] = useState("")
-  const [completedCharacters, setCompletedCharacters] = useState(0)
-  const [totalCharacters, setTotalCharacters] = useState(0)
+  const [wordsTyped, setWordsTyped] = useState(0)
+  const [totalWords, setTotalWords] = useState(0)
+  const [lastWordIndex, setLastWordIndex] = useState(0)
 
   const inputRef = useRef<HTMLInputElement>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const startTimeRef = useRef<number>(0)
   const correctCharsRef = useRef<number>(0)
   const totalCharsRef = useRef<number>(0)
-  const totalWordsTypedRef = useRef<number>(0)
-  const lastWpmUpdateRef = useRef<number>(0)
+  const lastWordRef = useRef<string>("")
 
   const { setTypingSpeed: setGlobalTypingSpeed } = useTypingSpeed()
   const { user, isLoading } = useAuth()
@@ -75,7 +75,7 @@ export default function TypingTest() {
           setCurrentText(firstText)
           // Calculate total characters for progress tracking
           const total = texts.reduce((sum, text) => sum + text.text.length, 0)
-          setTotalCharacters(total)
+          setTotalWords(total)
         }
       } catch (error) {
         console.error("Error loading texts:", error)
@@ -84,134 +84,164 @@ export default function TypingTest() {
     }
   }, [selectedRank, selectedDuration, isTestActive])
 
-  // Handle typing
+  // Add this function to count words in a text
+  const countWords = (text: string): number => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }
+
+  // Add this function to check if a word is correctly typed
+  const isWordCorrect = (typedWord: string, sourceWord: string): boolean => {
+    return typedWord === sourceWord;
+  }
+
+  // Update handleTyping function with improved word counting
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isTestActive) return
 
     const typed = e.target.value
     setTypedText(typed)
 
-    // Calculate correct characters and update stats
-    const chars = typed.split("")
-    let correctCount = 0
-    chars.forEach((char, index) => {
-      if (currentText[index] === char) {
-        correctCount++
+    // Update character counts for WPM calculation
+    let correctChars = 0
+    for (let i = 0; i < typed.length; i++) {
+      if (typed[i] === currentText[i]) {
+        correctChars++
       }
-    })
-
-    // Update character counts
-    correctCharsRef.current = correctCount
+    }
+    correctCharsRef.current = correctChars
     totalCharsRef.current = typed.length
 
-    // Update WPM
-    const now = Date.now()
-    if (now - lastWpmUpdateRef.current > 500) {
-      const elapsedMinutes = (now - startTimeRef.current) / 60000
-      if (elapsedMinutes > 0) {
-        const currentWpm = Math.round((totalCharsRef.current / 5) / elapsedMinutes)
-        setWpm(currentWpm)
+    // Word counting logic
+    if (typed.endsWith(' ')) {
+      const words = typed.trim().split(/\s+/)
+      const currentWord = words[words.length - 1]
+      const sourceWords = currentText.split(/\s+/)
+      const sourceWord = sourceWords[words.length - 1]
 
-        // Update typing speed category
-        if (currentWpm >= 35) {
-          setTypingSpeed("fast")
-        } else {
-          setTypingSpeed("slow")
+      if (currentWord && sourceWord && isWordCorrect(currentWord, sourceWord)) {
+        // Increment words typed count
+        setWordsTyped(prev => {
+          const newCount = prev + 1
+          console.log('Word completed correctly:', { currentWord, newCount })
+          return newCount
+        })
+
+        // Clear input if we've completed all words in current text
+        if (words.length === sourceWords.length) {
+          setTypedText('')
+          e.target.value = ''
+          moveToNextText()
         }
-
-        lastWpmUpdateRef.current = now
       }
     }
 
-    // Calculate accuracy
+    // Update accuracy
     if (totalCharsRef.current > 0) {
-      setAccuracy(Math.round((correctCharsRef.current / totalCharsRef.current) * 100))
+      const currentAccuracy = Math.round(
+        (correctCharsRef.current / totalCharsRef.current) * 100
+      )
+      setAccuracy(currentAccuracy)
     }
 
-    // Update progress
-    const progressPercent = (typed.length / currentText.length) * 100
-    setProgress(Math.min(progressPercent, 100))
+    // Update WPM
+    const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000
+    if (elapsedMinutes > 0) {
+      const currentWpm = Math.round((correctCharsRef.current / 5) / elapsedMinutes)
+      setWpm(currentWpm)
 
-    // Check if current text is completed
-    if (typed.length >= currentText.length) {
-      // Add completed text length to the completed characters count
-      setCompletedCharacters((prev) => prev + currentText.length)
-
-      // Move to next text
-      const nextIndex = currentTextIndex + 1
-      if (nextIndex < testTexts.length) {
-        const nextText = testTexts[nextIndex].text
-        setCurrentTextIndex(nextIndex)
-        setCurrentText(nextText)
-      } else {
-        // Load new texts
-        try {
-          const newTexts = getTextsForTest(selectedRank, selectedDuration)
-          setTestTexts((prev) => [...prev, ...newTexts])
-          const nextText = newTexts[0].text
-          setCurrentTextIndex(0)
-          setCurrentText(nextText)
-          
-          // Update total characters
-          const additionalChars = newTexts.reduce((sum, text) => sum + text.text.length, 0)
-          setTotalCharacters((prev) => prev + additionalChars)
-        } catch (error) {
-          console.error("Error loading new texts:", error)
-          setShouldEndTest(true)
-          return
-        }
-      }
-      
-      // Reset typed text and refocus input
-      setTypedText("")
-      if (inputRef.current) {
-        inputRef.current.value = ""
-        inputRef.current.focus()
-      }
-
-      // Reset progress for new text
-      setProgress(0)
+      // Update typing speed classification
+      const newTypingSpeed = currentWpm >= 40 ? "fast" : "slow"
+      setTypingSpeed(newTypingSpeed)
+      setGlobalTypingSpeed(newTypingSpeed)
     }
   }
 
-  // Handle timer
+  // Update moveToNextText function
+  const moveToNextText = () => {
+    // Move to next text
+    setCurrentTextIndex((prev) => prev + 1)
+    setTypedText("")
+
+    // If we've reached the end of our texts, get more
+    if (currentTextIndex >= testTexts.length - 1) {
+      try {
+        const newTexts = getTextsForTest(selectedRank, 5)
+        setTestTexts((prev) => [...prev, ...newTexts])
+
+        // Update total words count
+        const additionalWords = newTexts.reduce((sum, text) => {
+          return sum + countWords(text.text)
+        }, 0)
+        setTotalWords((prev: number) => prev + additionalWords)
+      } catch (error) {
+        console.error("Error loading additional texts:", error)
+      }
+    }
+  }
+
+  // Update startTest function
+  const startTest = () => {
+    // Reset stats
+    setCurrentTextIndex(0)
+    setTypedText("")
+    setWpm(0)
+    setAccuracy(100)
+    setProgress(0)
+    setWordsTyped(0)
+    setLastWordIndex(0)
+    correctCharsRef.current = 0
+    totalCharsRef.current = 0
+    lastWordRef.current = ""
+    setTestCompleted(false)
+    setTypingSpeed("slow")
+
+    // Calculate initial total words
+    const initialTotalWords = testTexts.reduce((sum, text) => sum + countWords(text.text), 0)
+    setTotalWords(initialTotalWords)
+
+    setIsTestActive(true)
+
+    // Focus input
+    if (inputRef.current) {
+      inputRef.current.focus()
+      inputRef.current.blur()
+      inputRef.current.focus()
+    }
+  }
+
+  // Update the progress calculation in the timer effect
   useEffect(() => {
     if (isTestActive) {
       setTimeLeft(selectedDuration * 60)
       startTimeRef.current = Date.now()
 
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
+        setTimeLeft(prev => {
           if (prev <= 1) {
-            // Instead of directly calling endTest, set a flag to trigger end
             setShouldEndTest(true)
             return 0
           }
           return prev - 1
         })
 
-        // Calculate WPM
+        // Calculate WPM and update typing speed
         const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000
         if (elapsedMinutes > 0) {
-          const currentWpm = Math.round(totalWordsTypedRef.current / elapsedMinutes)
+          const currentWpm = Math.round((correctCharsRef.current / 5) / elapsedMinutes)
           setWpm(currentWpm)
-
-          // Update typing speed category for dynamic effects
-          if (currentWpm >= 35) {
-            setTypingSpeed("fast")
-          } else {
-            setTypingSpeed("slow")
-          }
+          setTypingSpeed(currentWpm >= 35 ? "fast" : "slow")
         }
 
-        // Calculate accuracy
+        // Update accuracy
         if (totalCharsRef.current > 0) {
           setAccuracy(Math.round((correctCharsRef.current / totalCharsRef.current) * 100))
         }
 
-        // Update progress
-        const progressPercent = (completedCharacters / totalCharacters) * 100
-        setProgress(Math.min(progressPercent, 100))
+        // Update progress based on words completed
+        if (totalWords > 0) {
+          const progressPercent = (wordsTyped / totalWords) * 100
+          setProgress(Math.min(progressPercent, 100))
+        }
       }, 1000)
     }
 
@@ -220,7 +250,7 @@ export default function TypingTest() {
         clearInterval(timerRef.current)
       }
     }
-  }, [isTestActive, selectedDuration, completedCharacters, totalCharacters])
+  }, [isTestActive, selectedDuration, wordsTyped, totalWords])
 
   // Effect to handle ending the test safely outside the render phase
   useEffect(() => {
@@ -231,58 +261,25 @@ export default function TypingTest() {
     }
   }, [shouldEndTest, isTestActive])
 
-  // Start test
-  const startTest = () => {
-    // Reset stats
-    setCurrentTextIndex(0)
-    setTypedText("")
-    setWpm(0)
-    setAccuracy(100)
-    setProgress(0)
-    setCompletedCharacters(0)
-    correctCharsRef.current = 0
-    totalCharsRef.current = 0
-    totalWordsTypedRef.current = 0
-    setTestCompleted(false)
-    setTypingSpeed("slow")
-
-    setIsTestActive(true)
-
-    // Focus input and prevent default browser behavior
-    if (inputRef.current) {
-      inputRef.current.focus()
-      // Prevent any default browser behavior
-      inputRef.current.blur()
-      inputRef.current.focus()
-    }
-  }
-
-  // Add effect for updating global typing speed
-  useEffect(() => {
-    setGlobalTypingSpeed(typingSpeed)
-  }, [typingSpeed, setGlobalTypingSpeed])
-
   // End test
   const endTest = async () => {
-    console.log('endTest function called');
+    console.log('endTest function called')
     
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
     
-    // Calculate final WPM value
-    const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000;
+    // Calculate final WPM value based on correct characters
+    const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000
     if (elapsedMinutes > 0) {
-      // Calculate based on completed words and time
-      const finalWpm = Math.round(totalWordsTypedRef.current / elapsedMinutes);
-      setWpm(finalWpm);
-      console.log('Final WPM calculated:', finalWpm, 'words typed:', totalWordsTypedRef.current, 'minutes:', elapsedMinutes);
+      const finalWpm = Math.round((correctCharsRef.current / 5) / elapsedMinutes)
+      setWpm(finalWpm)
     }
     
-    // Update accuracy one final time
+    // Calculate final accuracy
     if (totalCharsRef.current > 0) {
-      const finalAccuracy = Math.round((correctCharsRef.current / totalCharsRef.current) * 100);
-      setAccuracy(finalAccuracy);
+      const finalAccuracy = Math.round((correctCharsRef.current / totalCharsRef.current) * 100)
+      setAccuracy(finalAccuracy)
     }
     
     setIsTestActive(false)
@@ -290,57 +287,52 @@ export default function TypingTest() {
     setGlobalTypingSpeed("slow")
 
     try {
-      console.log('endTest try block entered, auth state:', { user, isLoading });
+      console.log('endTest try block entered, auth state:', { user, isLoading })
       
-      // Check if user is authenticated and firebase auth is initialized
       if (!user || isLoading) {
         console.error('User not authenticated or auth still loading')
-        setResultSaveStatus('error');
-        setStatusMessage('You must be logged in to save test results');
+        setResultSaveStatus('error')
+        setStatusMessage('You must be logged in to save test results')
         return
       }
 
-      // Get the Firebase user object from auth
       const firebaseUser = auth.currentUser
-      console.log('Firebase currentUser:', firebaseUser);
+      console.log('Firebase currentUser:', firebaseUser)
       
       if (!firebaseUser) {
         console.error('Firebase user not available')
-        setResultSaveStatus('error');
-        setStatusMessage('Firebase authentication issue. Please try logging out and back in.');
+        setResultSaveStatus('error')
+        setStatusMessage('Firebase authentication issue. Please try logging out and back in.')
         return
       }
 
-      // Now get the token from the Firebase user object
-      console.log('Attempting to get ID token...');
-      setResultSaveStatus('saving');
-      setStatusMessage('Saving your test results...');
+      console.log('Attempting to get ID token...')
+      setResultSaveStatus('saving')
+      setStatusMessage('Saving your test results...')
       
-      let idToken;
+      let idToken
       try {
-        idToken = await firebaseUser.getIdToken(true); // Force token refresh
-        console.log('ID token obtained successfully', idToken ? 'Token available' : 'Token empty');
+        idToken = await firebaseUser.getIdToken(true)
+        console.log('ID token obtained successfully', idToken ? 'Token available' : 'Token empty')
       } catch (tokenError) {
-        console.error('Error getting ID token:', tokenError);
-        setResultSaveStatus('error');
-        setStatusMessage('Error getting authentication token. Please try again.');
-        return;
+        console.error('Error getting ID token:', tokenError)
+        setResultSaveStatus('error')
+        setStatusMessage('Error getting authentication token. Please try again.')
+        return
       }
       
-      // Ensure we're using the latest state values
-      const finalWpm = Math.round(totalWordsTypedRef.current / elapsedMinutes);
-      const finalCompletedChars = completedCharacters + (currentText ? Math.min(typedText.length, currentText.length) : 0);
+      const finalWpm = Math.round((correctCharsRef.current / 5) / elapsedMinutes)
       
       const payload = {
         wpm: finalWpm,
         accuracy,
         rank: selectedRank,
         testDuration: selectedDuration,
-        completedCharacters: finalCompletedChars
-      };
-      console.log('Preparing to send payload:', payload);
+        wordsTyped
+      }
+      console.log('Preparing to send payload:', payload)
       
-      console.log('Making fetch request to /api/test-results');
+      console.log('Making fetch request to /api/test-results')
       const response = await fetch('/api/test-results', {
         method: 'POST',
         headers: {
@@ -354,35 +346,33 @@ export default function TypingTest() {
         status: response.status, 
         ok: response.ok,
         statusText: response.statusText 
-      });
+      })
 
       if (!response.ok) {
         const errorData = await response.json()
-        setResultSaveStatus('error');
-        setStatusMessage(`Failed to save results: ${response.status} ${response.statusText}`);
+        setResultSaveStatus('error')
+        setStatusMessage(`Failed to save results: ${response.status} ${response.statusText}`)
         throw new Error(errorData.error || `Failed to save test results: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
-      console.log('Test results saved successfully:', data);
-      setResultSaveStatus('success');
-      setStatusMessage('Test results saved successfully!');
+      console.log('Test results saved successfully:', data)
+      setResultSaveStatus('success')
+      setStatusMessage('Test results saved successfully!')
       
-      // Reset status after 5 seconds
       setTimeout(() => {
-        setResultSaveStatus('idle');
-        setStatusMessage('');
-      }, 5000);
+        setResultSaveStatus('idle')
+        setStatusMessage('')
+      }, 5000)
     } catch (error) {
-      console.error('Error within endTest during save attempt:', error);
-      setResultSaveStatus('error');
-      setStatusMessage(error instanceof Error ? error.message : 'Unknown error saving results');
+      console.error('Error within endTest during save attempt:', error)
+      setResultSaveStatus('error')
+      setStatusMessage(error instanceof Error ? error.message : 'Unknown error saving results')
       
-      // Reset status after 5 seconds
       setTimeout(() => {
-        setResultSaveStatus('idle');
-        setStatusMessage('');
-      }, 5000);
+        setResultSaveStatus('idle')
+        setStatusMessage('')
+      }, 5000)
     }
   }
 
@@ -392,34 +382,6 @@ export default function TypingTest() {
       setGlobalTypingSpeed("slow")
     }
   }, [isTestActive, setGlobalTypingSpeed])
-
-  // Move to next text
-  const moveToNextText = () => {
-    // Add completed text length to the completed characters count
-    setCompletedCharacters((prev) => prev + currentText.length)
-
-    // Count words in the completed text
-    const wordsInCurrentText = currentText.split(/\s+/).filter(word => word.length > 0).length
-    totalWordsTypedRef.current += wordsInCurrentText
-
-    // Move to next text
-    setCurrentTextIndex((prev) => prev + 1)
-    setTypedText("")
-
-    // If we've reached the end of our texts, get more
-    if (currentTextIndex >= testTexts.length - 1) {
-      try {
-        const newTexts = getTextsForTest(selectedRank, 5) // Get more texts
-        setTestTexts((prev) => [...prev, ...newTexts])
-
-        // Update total characters
-        const additionalChars = newTexts.reduce((sum, text) => sum + text.text.length, 0)
-        setTotalCharacters((prev) => prev + additionalChars)
-      } catch (error) {
-        console.error("Error loading additional texts:", error)
-      }
-    }
-  }
 
   // Handle key press for keyboard visualization
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -515,7 +477,7 @@ export default function TypingTest() {
     setTestCompleted(false)
     setWpm(0)
     setAccuracy(100)
-    setCompletedCharacters(0)
+    setWordsTyped(0)
     setTypedText("")
     setActiveKeys([])
     setProgress(0)
@@ -528,7 +490,7 @@ export default function TypingTest() {
     setTestCompleted(false)
     setWpm(0)
     setAccuracy(100)
-    setCompletedCharacters(0)
+    setWordsTyped(0)
     setTypedText("")
     setActiveKeys([])
     setProgress(0)
@@ -649,7 +611,7 @@ export default function TypingTest() {
           accuracy={accuracy}
           duration={selectedDuration}
           rank={selectedRank}
-          charactersTyped={totalCharsRef.current}
+          wordsTyped={wordsTyped}
           onRetry={handleRetry}
           onNewTest={handleNewTest}
         />
@@ -798,8 +760,8 @@ export default function TypingTest() {
                 typingSpeed === "fast" ? "bg-blue-950/50" : "bg-solo-black/50"
               }`}
             >
-              <div className="text-sm text-gray-300 mb-1">Characters Typed</div>
-              <div className="text-3xl font-mono">{totalCharsRef.current}</div>
+              <div className="text-sm text-gray-300 mb-1">Words Typed</div>
+              <div className="text-3xl font-mono">{wordsTyped}</div>
             </div>
           </div>
         </Card>
