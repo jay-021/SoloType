@@ -178,12 +178,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true)
     clearError()
 
+    console.log('Starting Google sign-in process...')
+    console.log('Auth instance state:', {
+      isInitialized: !!auth,
+      currentUser: auth.currentUser,
+      authDomain: auth.config.authDomain
+    })
+
     try {
-      await signInWithPopup(auth, googleProvider)
+      console.log('Attempting signInWithPopup...')
+      const result = await signInWithPopup(auth, googleProvider)
+      console.log('Sign-in successful:', {
+        user: result.user.email,
+        providerId: result.providerId
+      })
       // Show login notification
       showNotification("login")
     } catch (err: any) {
-      console.error("Google sign-in error:", err)
+      console.error('Detailed Google sign-in error:', {
+        code: err.code,
+        message: err.message,
+        email: err?.email,
+        credential: err?.credential,
+        fullError: err
+      })
       setError(err.message || "Failed to sign in with Google. Please try again.")
       throw err
     } finally {

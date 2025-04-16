@@ -106,8 +106,8 @@ export default function SignupPage() {
       await signInWithGoogle()
       router.push("/")
     } catch (error) {
+      console.error("Google sign-in error details:", error)
       // Error is handled in the auth context
-      console.error("Google sign-in failed")
     } finally {
       setIsGoogleLoading(false)
     }

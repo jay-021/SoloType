@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import TestResults from "@/components/test-results"
 import DynamicKeyboard from "@/components/dynamic-keyboard"
 import { useTypingSpeed } from "@/context/typing-speed-context"
+import { useAuth } from "@/context/auth-context"
 
 // Dungeon ranks
 const dungeonRanks = [
@@ -55,6 +56,7 @@ export default function TypingTest() {
   const lastWpmUpdateRef = useRef<number>(0)
 
   const { setTypingSpeed: setGlobalTypingSpeed } = useTypingSpeed()
+  const { user } = useAuth()
 
   // Load texts when rank or duration changes
   useEffect(() => {
@@ -246,27 +248,48 @@ export default function TypingTest() {
   }, [typingSpeed, setGlobalTypingSpeed])
 
   // End test
-  const endTest = () => {
+  const endTest = async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
-
-    // Calculate final WPM
-    const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000
-    if (elapsedMinutes > 0) {
-      // Calculate WPM based on total characters typed (1 word = 5 characters)
-      const totalCharactersTyped = totalCharsRef.current
-      const finalWpm = Math.round((totalCharactersTyped / 5) / elapsedMinutes)
-      setWpm(finalWpm)
-    }
-
     setIsTestActive(false)
     setTestCompleted(true)
-    setTypedText("")
-    setActiveKeys([])
-    setProgress(0)
-    setCurrentTextIndex(0)
-    setTypingSpeed("slow")
+    setGlobalTypingSpeed("slow")
+
+    try {
+      if (!user) {
+        console.error('User not authenticated')
+        return
+      }
+
+      const idToken = await user.getIdToken()
+      
+      const response = await fetch('/api/test-results', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          wpm,
+          accuracy,
+          rank: selectedRank,
+          testDuration: selectedDuration,
+          completedCharacters
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save test results')
+      }
+
+      const data = await response.json()
+      console.log('Test results saved successfully:', data)
+    } catch (error) {
+      console.error('Error saving test results:', error)
+      // You might want to show an error notification to the user here
+    }
   }
 
   // Add effect for resetting global typing speed when test ends
@@ -418,6 +441,32 @@ export default function TypingTest() {
     setCurrentTextIndex(0)
     setTimeLeft(selectedDuration * 60)
     setTypingSpeed("slow")
+  }
+
+  const fetchTestResults = async () => {
+    try {
+      if (!user) {
+        console.error('User not authenticated')
+        return
+      }
+
+      const idToken = await user.getIdToken()
+      
+      const response = await fetch('/api/test-results', {
+        headers: {
+          'Authorization': `Bearer ${idToken}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch test results')
+      }
+
+      const data = await response.json()
+      console.log('Test results fetched:', data)
+    } catch (error) {
+      console.error('Error fetching test results:', error)
+    }
   }
 
   return (
