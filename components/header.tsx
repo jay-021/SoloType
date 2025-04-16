@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Menu, X, LogIn, UserPlus, LogOut, User } from "lucide-react"
+import { Menu, X, LogIn, UserPlus, LogOut, User, History } from "lucide-react"
 import { usePathname } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import {
@@ -89,6 +89,12 @@ export default function Header() {
                 <DropdownMenuItem className="focus:bg-solo-purple/20 focus:text-white cursor-pointer">
                   Settings
                 </DropdownMenuItem>
+                <DropdownMenuItem className="focus:bg-solo-purple/20 focus:text-white cursor-pointer" asChild>
+                  <Link href="/history">
+                    <History className="mr-2 h-4 w-4" />
+                    Test History
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-solo-purple/20" />
                 <DropdownMenuItem
                   className="text-red-500 focus:bg-red-900/20 focus:text-red-400 cursor-pointer"
@@ -173,6 +179,14 @@ export default function Header() {
                     <User className="h-4 w-4 text-solo-purple-light" />
                     <span className="text-sm font-medium">{user.username}</span>
                   </div>
+                  <Link
+                    href="/history"
+                    className="px-4 py-2 text-sm font-medium hover:bg-solo-purple/20 rounded-md flex items-center"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <History className="mr-2 h-4 w-4 text-solo-purple-light" />
+                    Test History
+                  </Link>
                   <Button
                     variant="destructive"
                     className="bg-red-900/20 text-red-500 hover:bg-red-900/40 hover:text-red-400 w-full"

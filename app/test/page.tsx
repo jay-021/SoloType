@@ -13,6 +13,7 @@ import TestResults from "@/components/test-results"
 import DynamicKeyboard from "@/components/dynamic-keyboard"
 import { useTypingSpeed } from "@/context/typing-speed-context"
 import { useAuth } from "@/context/auth-context"
+import { auth } from "@/lib/firebase/config"  // Import Firebase auth
 
 // Dungeon ranks
 const dungeonRanks = [
@@ -38,6 +39,10 @@ export default function TypingTest() {
   const [progress, setProgress] = useState(0)
   const [testCompleted, setTestCompleted] = useState(false)
   const [typingSpeed, setTypingSpeed] = useState<"slow" | "fast">("slow")
+  // Flag to end test safely
+  const [shouldEndTest, setShouldEndTest] = useState(false)
+  const [resultSaveStatus, setResultSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   // Text management
   const [testTexts, setTestTexts] = useState<TypingText[]>([])
@@ -56,7 +61,7 @@ export default function TypingTest() {
   const lastWpmUpdateRef = useRef<number>(0)
 
   const { setTypingSpeed: setGlobalTypingSpeed } = useTypingSpeed()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
 
   // Load texts when rank or duration changes
   useEffect(() => {
@@ -152,7 +157,7 @@ export default function TypingTest() {
           setTotalCharacters((prev) => prev + additionalChars)
         } catch (error) {
           console.error("Error loading new texts:", error)
-          endTest()
+          setShouldEndTest(true)
           return
         }
       }
@@ -178,7 +183,8 @@ export default function TypingTest() {
       timerRef.current = setInterval(() => {
         setTimeLeft((prev) => {
           if (prev <= 1) {
-            endTest()
+            // Instead of directly calling endTest, set a flag to trigger end
+            setShouldEndTest(true)
             return 0
           }
           return prev - 1
@@ -214,7 +220,16 @@ export default function TypingTest() {
         clearInterval(timerRef.current)
       }
     }
-  }, [isTestActive, selectedDuration, completedCharacters, totalCharacters, setGlobalTypingSpeed])
+  }, [isTestActive, selectedDuration, completedCharacters, totalCharacters])
+
+  // Effect to handle ending the test safely outside the render phase
+  useEffect(() => {
+    if (shouldEndTest && isTestActive) {
+      console.log('shouldEndTest effect triggered, calling endTest()');
+      endTest()
+      setShouldEndTest(false)
+    }
+  }, [shouldEndTest, isTestActive])
 
   // Start test
   const startTest = () => {
@@ -249,46 +264,125 @@ export default function TypingTest() {
 
   // End test
   const endTest = async () => {
+    console.log('endTest function called');
+    
     if (timerRef.current) {
       clearInterval(timerRef.current)
     }
+    
+    // Calculate final WPM value
+    const elapsedMinutes = (Date.now() - startTimeRef.current) / 60000;
+    if (elapsedMinutes > 0) {
+      // Calculate based on completed words and time
+      const finalWpm = Math.round(totalWordsTypedRef.current / elapsedMinutes);
+      setWpm(finalWpm);
+      console.log('Final WPM calculated:', finalWpm, 'words typed:', totalWordsTypedRef.current, 'minutes:', elapsedMinutes);
+    }
+    
+    // Update accuracy one final time
+    if (totalCharsRef.current > 0) {
+      const finalAccuracy = Math.round((correctCharsRef.current / totalCharsRef.current) * 100);
+      setAccuracy(finalAccuracy);
+    }
+    
     setIsTestActive(false)
     setTestCompleted(true)
     setGlobalTypingSpeed("slow")
 
     try {
-      if (!user) {
-        console.error('User not authenticated')
+      console.log('endTest try block entered, auth state:', { user, isLoading });
+      
+      // Check if user is authenticated and firebase auth is initialized
+      if (!user || isLoading) {
+        console.error('User not authenticated or auth still loading')
+        setResultSaveStatus('error');
+        setStatusMessage('You must be logged in to save test results');
         return
       }
 
-      const idToken = await user.getIdToken()
+      // Get the Firebase user object from auth
+      const firebaseUser = auth.currentUser
+      console.log('Firebase currentUser:', firebaseUser);
       
+      if (!firebaseUser) {
+        console.error('Firebase user not available')
+        setResultSaveStatus('error');
+        setStatusMessage('Firebase authentication issue. Please try logging out and back in.');
+        return
+      }
+
+      // Now get the token from the Firebase user object
+      console.log('Attempting to get ID token...');
+      setResultSaveStatus('saving');
+      setStatusMessage('Saving your test results...');
+      
+      let idToken;
+      try {
+        idToken = await firebaseUser.getIdToken(true); // Force token refresh
+        console.log('ID token obtained successfully', idToken ? 'Token available' : 'Token empty');
+      } catch (tokenError) {
+        console.error('Error getting ID token:', tokenError);
+        setResultSaveStatus('error');
+        setStatusMessage('Error getting authentication token. Please try again.');
+        return;
+      }
+      
+      // Ensure we're using the latest state values
+      const finalWpm = Math.round(totalWordsTypedRef.current / elapsedMinutes);
+      const finalCompletedChars = completedCharacters + (currentText ? Math.min(typedText.length, currentText.length) : 0);
+      
+      const payload = {
+        wpm: finalWpm,
+        accuracy,
+        rank: selectedRank,
+        testDuration: selectedDuration,
+        completedCharacters: finalCompletedChars
+      };
+      console.log('Preparing to send payload:', payload);
+      
+      console.log('Making fetch request to /api/test-results');
       const response = await fetch('/api/test-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify({
-          wpm,
-          accuracy,
-          rank: selectedRank,
-          testDuration: selectedDuration,
-          completedCharacters
-        })
+        body: JSON.stringify(payload)
       })
+
+      console.log('Fetch response received:', { 
+        status: response.status, 
+        ok: response.ok,
+        statusText: response.statusText 
+      });
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save test results')
+        setResultSaveStatus('error');
+        setStatusMessage(`Failed to save results: ${response.status} ${response.statusText}`);
+        throw new Error(errorData.error || `Failed to save test results: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
-      console.log('Test results saved successfully:', data)
+      console.log('Test results saved successfully:', data);
+      setResultSaveStatus('success');
+      setStatusMessage('Test results saved successfully!');
+      
+      // Reset status after 5 seconds
+      setTimeout(() => {
+        setResultSaveStatus('idle');
+        setStatusMessage('');
+      }, 5000);
     } catch (error) {
-      console.error('Error saving test results:', error)
-      // You might want to show an error notification to the user here
+      console.error('Error within endTest during save attempt:', error);
+      setResultSaveStatus('error');
+      setStatusMessage(error instanceof Error ? error.message : 'Unknown error saving results');
+      
+      // Reset status after 5 seconds
+      setTimeout(() => {
+        setResultSaveStatus('idle');
+        setStatusMessage('');
+      }, 5000);
     }
   }
 
@@ -443,6 +537,7 @@ export default function TypingTest() {
     setTypingSpeed("slow")
   }
 
+  // Improved fetchTestResults function that uses Firebase auth properly
   const fetchTestResults = async () => {
     try {
       if (!user) {
@@ -450,7 +545,14 @@ export default function TypingTest() {
         return
       }
 
-      const idToken = await user.getIdToken()
+      // Get the Firebase user object from auth
+      const firebaseUser = auth.currentUser
+      if (!firebaseUser) {
+        console.error('Firebase user not available')
+        return
+      }
+
+      const idToken = await firebaseUser.getIdToken()
       
       const response = await fetch('/api/test-results', {
         headers: {
@@ -475,6 +577,17 @@ export default function TypingTest() {
         typingSpeed === "fast" ? "hunter-mode" : "shadow-mode"
       }`}
     >
+      {/* Status message alert */}
+      {statusMessage && (
+        <div className={`fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 transition-all duration-300 ${
+          resultSaveStatus === 'success' ? 'bg-green-600 text-white' :
+          resultSaveStatus === 'error' ? 'bg-red-600 text-white' :
+          resultSaveStatus === 'saving' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'
+        }`}>
+          {statusMessage}
+        </div>
+      )}
+      
       <div className="flex items-center mb-8">
         <Button asChild variant="ghost" className="mr-4">
           <Link href="/">
@@ -694,4 +807,3 @@ export default function TypingTest() {
     </div>
   )
 }
-
