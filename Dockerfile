@@ -2,18 +2,23 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
+# Install pnpm
+ARG PNPM_VERSION=8
+RUN npm install -g pnpm@${PNPM_VERSION}
+
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies with exact versions from lockfile
-RUN npm ci
-
-# Install Firebase explicitly
-RUN npm install firebase@10.8.0
+RUN pnpm install --frozen-lockfile
 
 # Stage 2: Builder
 FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Install pnpm
+ARG PNPM_VERSION=8
+RUN npm install -g pnpm@${PNPM_VERSION}
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
@@ -41,7 +46,7 @@ ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SE
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
 
 # Build the application
-RUN npm run build
+RUN pnpm build
 
 # Stage 3: Runner (Production)
 FROM node:20-alpine AS runner
