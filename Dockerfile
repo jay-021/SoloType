@@ -50,6 +50,22 @@ ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
 ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
 
+# --- Add these lines for debugging ---
+RUN echo "--- Listing node_modules contents ---"
+RUN ls -la node_modules
+RUN echo "--- Checking for firebase module ---"
+RUN ls -la node_modules/firebase || echo "firebase directory not found"
+RUN echo "--- Checking for firebase/app ---"
+RUN ls -la node_modules/firebase/app || echo "firebase/app directory not found"
+RUN echo "--- Checking for firebase/auth ---"
+RUN ls -la node_modules/firebase/auth || echo "firebase/auth directory not found"
+RUN echo "--- Displaying tsconfig.json ---"
+RUN cat tsconfig.json
+RUN echo "--- Verifying NEXT_PUBLIC_FIREBASE_API_KEY ---"
+RUN echo "API Key during build: $NEXT_PUBLIC_FIREBASE_API_KEY"
+RUN echo "--- End Debugging ---"
+# --- Original build command follows ---
+
 # Build the application
 RUN pnpm build
 
