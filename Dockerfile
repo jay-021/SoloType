@@ -20,8 +20,13 @@ WORKDIR /app
 ARG PNPM_VERSION=8
 RUN npm install -g pnpm@${PNPM_VERSION}
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files needed for install
+COPY package.json pnpm-lock.yaml ./
+
+# Install dependencies within the builder stage
+RUN pnpm install --frozen-lockfile
+
+# Copy the rest of the application code
 COPY . .
 
 # Set environment variables for build
