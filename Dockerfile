@@ -24,7 +24,7 @@ RUN npm install -g pnpm@${PNPM_VERSION}
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies within the builder stage
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy the rest of the application code
 COPY . .
