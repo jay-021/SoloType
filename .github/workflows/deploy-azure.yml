@@ -4,7 +4,7 @@ env:
   AZURE_WEBAPP_NAME: 'solotype'
   NODE_VERSION: '20'
   PNPM_VERSION: '8'
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/solotype-frontend
+  # IMAGE_NAME will be set in a step to ensure lowercase
 
 on:
   push:
@@ -48,6 +48,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      # Make repository name lowercase to avoid Docker tag validation errors
+      - name: Set repo name to lowercase
+        id: repo_name
+        run: |
+          REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
+          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "repo_lc=${REPO_LC}" >> $GITHUB_ENV
+          echo "owner_lc=${REPO_OWNER_LC}" >> $GITHUB_ENV
+          echo "image_name=ghcr.io/${REPO_OWNER_LC}/$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')/solotype-frontend" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -68,8 +78,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.IMAGE_NAME }}:${{ github.sha }}
-            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.image_name }}:${{ github.sha }}
+            ${{ env.image_name }}:latest
           file: ./Dockerfile
           build-args: |
             NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
@@ -89,6 +99,12 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
+      # We need to set the image_name again in this job
+      - name: Set repo name to lowercase
+        run: |
+          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "image_name=ghcr.io/${REPO_OWNER_LC}/$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')/solotype-frontend" >> $GITHUB_ENV
+
       # Login to Azure using service principal credentials stored in AZURE_CREDENTIALS secret
       # AZURE_CREDENTIALS should contain output from: az ad sp create-for-rbac --name "myApp" --role contributor \
       # --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Web/sites/{app-name} \
@@ -105,7 +121,7 @@ jobs:
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+          images: '${{ env.image_name }}:${{ github.sha }}'
           
       # Optional: Logout from Azure after deployment
       - name: Logout from Azure
