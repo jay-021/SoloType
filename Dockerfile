@@ -50,21 +50,28 @@ ENV NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}
 ENV NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}
 ENV NEXT_PUBLIC_FIREBASE_APP_ID=${NEXT_PUBLIC_FIREBASE_APP_ID}
 
-# --- Add these lines for debugging ---
-RUN echo "--- Listing node_modules contents ---"
-RUN ls -la node_modules
-RUN echo "--- Checking for firebase module ---"
-RUN ls -la node_modules/firebase || echo "firebase directory not found"
-RUN echo "--- Checking for firebase/app ---"
-RUN ls -la node_modules/firebase/app || echo "firebase/app directory not found"
-RUN echo "--- Checking for firebase/auth ---"
-RUN ls -la node_modules/firebase/auth || echo "firebase/auth directory not found"
-RUN echo "--- Displaying tsconfig.json ---"
+# --- Enhanced debugging for Firebase module issues ---
+RUN echo "--- Verifying pnpm install in builder stage ---"
+RUN pnpm list firebase # Check if firebase is listed by pnpm
+RUN echo "--- Detailed node_modules listing ---"
+RUN find node_modules -name "firebase" -type d | sort
+RUN find node_modules -path "*/firebase/app*" | sort
+RUN find node_modules -path "*/firebase/auth*" | sort
+RUN echo "--- Package resolution verification ---"
+RUN cat node_modules/.pnpm/firebase@*/node_modules/firebase/package.json || echo "Firebase package.json not found"
+RUN ls -la node_modules/.pnpm/firebase* || echo "No firebase packages in .pnpm directory"
+RUN echo "--- Checking module structure ---"
+RUN find node_modules/firebase -type f -name "*.js" | head -10 || echo "No JS files in firebase module"
+RUN echo "--- Verifying tsconfig.json ---"
 RUN cat tsconfig.json
-RUN echo "--- Verifying NEXT_PUBLIC_FIREBASE_API_KEY ---"
-RUN echo "API Key during build: $NEXT_PUBLIC_FIREBASE_API_KEY"
-RUN echo "--- End Debugging ---"
-# --- Original build command follows ---
+RUN echo "--- Checking import paths ---" 
+RUN find . -type f -name "*.ts" -o -name "*.tsx" | xargs grep -l "firebase" | head -5
+RUN echo "--- Verifying Env Vars before build ---"
+RUN printenv | grep NEXT_PUBLIC_FIREBASE || echo "Firebase Env Vars not found"
+RUN echo "--- Attempting manual resolution of firebase module ---"
+RUN node -e "try { require.resolve('firebase/app'); console.log('firebase/app can be resolved'); } catch(e) { console.log('ERROR: firebase/app cannot be resolved:', e.message); }"
+RUN node -e "try { require.resolve('firebase/auth'); console.log('firebase/auth can be resolved'); } catch(e) { console.log('ERROR: firebase/auth cannot be resolved:', e.message); }"
+RUN echo "--- End Enhanced Debugging ---"
 
 # Build the application
 RUN pnpm build
