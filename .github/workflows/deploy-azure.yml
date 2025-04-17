@@ -92,6 +92,7 @@ jobs:
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
             NODE_VERSION=${{ env.NODE_VERSION }}
             PNPM_VERSION=${{ env.PNPM_VERSION }}
+            MONGODB_URI=${{ secrets.MONGODB_URI }}
 
   deploy:
     # Deploy job runs only after the build job succeeds
