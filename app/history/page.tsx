@@ -122,21 +122,27 @@ export default function HistoryPage() {
              throw new Error("Invalid JSON response from API");
            }
            
-           // Ensure we always set an array, even if API response is unexpected
-           const resultsArray = data && data.results && Array.isArray(data.results) 
-             ? data.results 
-             : [];
+           // ENHANCED SAFETY CHECK: Ensure we ALWAYS have an array to work with
+           let resultsArray: TestResult[] = [];
            
-           // Map the results to ensure consistent ID fields (MongoDB uses _id)
-           const mappedResults = resultsArray.map(result => ({
+           if (data?.success === true && data?.results) {
+             if (Array.isArray(data.results)) {
+               resultsArray = data.results;
+             } else {
+               // Log unexpected data structure
+               errorLog('[HistoryPage] API returned success but results is not an array', data);
+             }
+           }
+           
+           // Ensure each result has an id property (using _id as fallback)
+           const normalizedResults = resultsArray.map(result => ({
              ...result,
-             // Ensure we have an id field (use _id as fallback)
              id: result.id || (result._id ? result._id.toString() : `fallback-${Date.now()}-${Math.random()}`),
            }));
            
-           // Set the results state with the mapped array
-           setResults(mappedResults);
-           debugLog('[HistoryPage] Results state updated with count:', mappedResults.length);
+           // Update state with guaranteed array
+           setResults(normalizedResults);
+           debugLog('[HistoryPage] Results state updated with array of length:', normalizedResults.length);
            
            setError(null);
         } catch (tokenError) {
@@ -163,6 +169,12 @@ export default function HistoryPage() {
 
     fetchResults()
   }, [user, isAuthenticated, isMounted])
+
+  // Debug log right before rendering
+  debugLog('[HistoryPage] Rendering with results type:', typeof results, 
+           'Is Array:', Array.isArray(results), 
+           'Length:', results.length,
+           'Sample item type:', results.length > 0 ? typeof results[0] : 'none');
 
   if (!isMounted) {
     return null
@@ -210,9 +222,8 @@ export default function HistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {/* Add safety check before mapping */}
-              {Array.isArray(results) && results.map((result) => (
-                <TableRow key={result.id || result._id}>
+              {results.map((result) => (
+                <TableRow key={result.id}>
                   <TableCell>{format(new Date(result.timestamp), "MMM d, yyyy h:mm a")}</TableCell>
                   <TableCell className="text-right">{Math.round(result.wpm)}</TableCell>
                   <TableCell className="text-right">{Math.round(result.accuracy)}%</TableCell>
