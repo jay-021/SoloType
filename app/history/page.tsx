@@ -40,6 +40,7 @@ export default function HistoryPage() {
     if (!isMounted) return;
     
     if (!isAuthenticated || !user) {
+      errorLog('[HistoryPage] Error: No user object found in context.');
       setError("Please log in to view your test history")
       setIsLoading(false)
       return
@@ -47,24 +48,46 @@ export default function HistoryPage() {
 
     const fetchResults = async () => {
       try {
-        debugLog('[HistoryPage] User object from context:', user);
+        // Add detailed auth state logging
+        debugLog('[HistoryPage] Auth State:', { 
+          isAuthenticated, 
+          userUid: user?.id, 
+          userEmail: user?.email,
+          userProvider: user?.provider
+        });
+        
+        // Get and log Firebase currentUser details
         const firebaseUser = auth.currentUser;
-        debugLog('[HistoryPage] auth.currentUser object:', firebaseUser);
+        debugLog('[HistoryPage] auth.currentUser Check:', {
+          exists: !!firebaseUser,
+          uid: firebaseUser?.uid,
+          email: firebaseUser?.email,
+          isAnonymous: firebaseUser?.isAnonymous,
+          emailVerified: firebaseUser?.emailVerified,
+          providerData: firebaseUser?.providerData,
+          hasGetIdToken: typeof firebaseUser?.getIdToken === 'function'
+        });
         
         // Add a robust check before proceeding
         if (!firebaseUser || typeof firebaseUser.getIdToken !== 'function') {
-           errorLog('[HistoryPage] Error: auth.currentUser is null or invalid for getIdToken.', { firebaseUser });
+           errorLog('[HistoryPage] Error: auth.currentUser is null or invalid before calling getIdToken.', { 
+             firebaseUser,
+             authInitialized: !!auth,
+             authCurrentUser: !!auth.currentUser 
+           });
            setError('Authentication error. Try refreshing.');
            setIsLoading(false);
            return;
         }
         
-        // Now attempt to get token
+        // Now attempt to get token with detailed error catching
         debugLog('[HistoryPage] Attempting firebaseUser.getIdToken(true)...');
         try {
            const idToken = await firebaseUser.getIdToken(true);
-           debugLog('[HistoryPage] ID token obtained.');
+           debugLog('[HistoryPage] ID token obtained successfully. Token length:', idToken?.length || 0);
            
+           // Log request details
+           debugLog('[HistoryPage] Making API request to /api/test-results');
            const response = await fetch("/api/test-results", {
              headers: {
                Authorization: `Bearer ${idToken}`,
@@ -72,31 +95,32 @@ export default function HistoryPage() {
            });
 
            // Log response details
-           debugLog('[HistoryPage] Response status:', response.status);
-           debugLog('[HistoryPage] Response headers:', Object.fromEntries([...response.headers.entries()]));
+           debugLog('[HistoryPage] API Response status:', response.status);
+           debugLog('[HistoryPage] API Response headers:', Object.fromEntries([...response.headers.entries()]));
            
            if (!response.ok) {
-             throw new Error("Failed to fetch test results");
+             throw new Error(`Failed to fetch test results. Status: ${response.status}`);
            }
 
            // Get the response text
            const responseText = await response.text();
-           debugLog('[HistoryPage] Raw response text:', responseText);
+           debugLog('[HistoryPage] API Response text length:', responseText.length);
            
            // Parse the JSON
            let data;
            try {
              data = JSON.parse(responseText);
-             debugLog('[HistoryPage] Parsed response data:', data);
+             debugLog('[HistoryPage] Parsed response data structure:', {
+               hasSuccess: 'success' in data,
+               successValue: data.success,
+               hasResults: 'results' in data,
+               resultsIsArray: Array.isArray(data.results),
+               resultsLength: Array.isArray(data.results) ? data.results.length : 'not an array',
+             });
            } catch (parseError) {
              errorLog('[HistoryPage] Failed to parse response as JSON:', parseError);
              throw new Error("Invalid JSON response from API");
            }
-           
-           // Log the API response for debugging
-           debugLog('[HistoryPage] Raw API Response Data:', data); 
-           debugLog('[HistoryPage] Type of data.results:', typeof data.results);
-           debugLog('[HistoryPage] Is data.results an array?:', Array.isArray(data.results));
            
            // Ensure we always set an array, even if API response is unexpected
            const resultsArray = data && data.results && Array.isArray(data.results) 
@@ -112,18 +136,26 @@ export default function HistoryPage() {
            
            // Set the results state with the mapped array
            setResults(mappedResults);
-           debugLog('[HistoryPage] testResults state updated to:', mappedResults);
+           debugLog('[HistoryPage] Results state updated with count:', mappedResults.length);
            
            setError(null);
         } catch (tokenError) {
            errorLog('[HistoryPage] Error calling firebaseUser.getIdToken:', tokenError);
+           // Log more details about the token error
+           if (tokenError instanceof Error) {
+             debugLog('[HistoryPage] Token error details:', {
+               name: tokenError.name,
+               message: tokenError.message,
+               stack: tokenError.stack
+             });
+           }
            setError('Failed to get authentication token.');
            setIsLoading(false);
            return;
         }
       } catch (err) {
         setError("Failed to load test history")
-        errorLog("Error fetching test results:", err)
+        errorLog("[HistoryPage] Error fetching test results:", err)
       } finally {
         setIsLoading(false)
       }

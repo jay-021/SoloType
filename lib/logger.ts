@@ -12,9 +12,14 @@ const LOG_LEVELS = {
 
 // Set the current log level based on environment
 // In production, we might want to suppress debug logs
-const CURRENT_LOG_LEVEL = process.env.NODE_ENV === 'production'
-  ? LOG_LEVELS.INFO
-  : LOG_LEVELS.DEBUG;
+// But allow override with NEXT_PUBLIC_ENABLE_DEBUG_LOGGING=true
+const isDebugEnabled = 
+  process.env.NODE_ENV !== 'production' || 
+  process.env.NEXT_PUBLIC_ENABLE_DEBUG_LOGGING === 'true';
+
+const CURRENT_LOG_LEVEL = isDebugEnabled
+  ? LOG_LEVELS.DEBUG
+  : LOG_LEVELS.INFO;
 
 /**
  * Debug level logging
