@@ -9,8 +9,7 @@ env:
   # Set Node.js and pnpm versions used in Dockerfile and setup
   NODE_VERSION: '20'
   PNPM_VERSION: '8'
-  # Define the target GHCR image name structure dynamically
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/solotype-frontend
+  # IMAGE_NAME will be set in steps
 
 on:
   # Triggers the workflow on push events but only for the main branch
@@ -41,7 +40,7 @@ jobs:
         uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
-          run_install: false # We run install inside Docker build
+          run_install: false # We'll install dependencies in Docker
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -57,10 +56,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      - name: Set repo name to lowercase and define image name
+        run: |
+          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          REPO_NAME_LC=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=ghcr.io/${REPO_OWNER_LC}/${REPO_NAME_LC}/solotype-frontend" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login to GitHub Container Registry using the automatic GITHUB_TOKEN
+      # Login to GitHub Container Registry using the GITHUB_TOKEN
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -69,8 +74,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Build and push Docker image to GHCR
-      # Tags with commit SHA for specific deployment version and 'latest'
-      - name: Build and push container image to GHCR
+      - name: Build and push container image
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -79,7 +83,6 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
             ${{ env.IMAGE_NAME }}:latest
           file: ./Dockerfile
-          # Pass secrets as build arguments for Next.js build process
           build-args: |
             NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
             NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -99,19 +102,25 @@ jobs:
       url: ${{ steps.deploy-to-webapp.outputs.webapp-url }} # Output the deployed URL
 
     steps:
+      # Redefine the lowercase image name for this job
+      - name: Set repo name to lowercase and define image name
+        run: |
+          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          REPO_NAME_LC=$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=ghcr.io/${REPO_OWNER_LC}/${REPO_NAME_LC}/solotype-frontend" >> $GITHUB_ENV
+
       # Login to Azure using the Service Principal credentials stored in secrets
       - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Deploy the specific image tag from GHCR to Azure Web App
+      # Deploy to Azure Web App using the container image from GHCR
       - name: Deploy to Azure Web App
         id: deploy-to-webapp # Give the step an ID to reference its outputs
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          # Specify the exact image built in the previous job using commit SHA
           images: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
 
       # Optional: Logout from Azure
