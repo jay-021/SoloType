@@ -1,19 +1,28 @@
+# .github/workflows/deploy-azure.yml
+# Workflow to build the Docker image, push to GHCR, and deploy to Azure Web App
+
 name: Build and Deploy to Azure Web App
 
 env:
+  # Set your Azure Web App name here
   AZURE_WEBAPP_NAME: 'solotype'
+  # Set Node.js and pnpm versions used in Dockerfile and setup
   NODE_VERSION: '20'
   PNPM_VERSION: '8'
-  # IMAGE_NAME will be set in a step to ensure lowercase
+  # Define the target GHCR image name structure dynamically
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}/solotype-frontend
 
 on:
+  # Triggers the workflow on push events but only for the main branch
   push:
     branches: [ "main" ]
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# Permissions needed for the workflow
 permissions:
-  contents: read
-  packages: write
+  contents: read     # To checkout code
+  packages: write    # To push container images to GHCR
 
 jobs:
   build:
@@ -32,7 +41,7 @@ jobs:
         uses: pnpm/action-setup@v3
         with:
           version: ${{ env.PNPM_VERSION }}
-          run_install: false
+          run_install: false # We run install inside Docker build
 
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -48,21 +57,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      # Make repository name lowercase to avoid Docker tag validation errors
-      - name: Set repo name to lowercase
-        id: repo_name
-        run: |
-          REPO_LC=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')
-          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-          echo "repo_lc=${REPO_LC}" >> $GITHUB_ENV
-          echo "owner_lc=${REPO_OWNER_LC}" >> $GITHUB_ENV
-          echo "image_name=ghcr.io/${REPO_OWNER_LC}/$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')/solotype-frontend" >> $GITHUB_ENV
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Login to GitHub Container Registry using the GITHUB_TOKEN
-      # This allows pushing to ghcr.io repositories owned by the same user/org
+      # Login to GitHub Container Registry using the automatic GITHUB_TOKEN
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -71,16 +69,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       # Build and push Docker image to GHCR
-      # Tags both with commit SHA for precise version and latest for easy reference
-      - name: Build and push container image
+      # Tags with commit SHA for specific deployment version and 'latest'
+      - name: Build and push container image to GHCR
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ${{ env.image_name }}:${{ github.sha }}
-            ${{ env.image_name }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
           file: ./Dockerfile
+          # Pass secrets as build arguments for Next.js build process
           build-args: |
             NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
             NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -92,38 +91,30 @@ jobs:
             PNPM_VERSION=${{ env.PNPM_VERSION }}
 
   deploy:
+    # Deploy job runs only after the build job succeeds
     runs-on: ubuntu-latest
     needs: build
     environment:
-      name: 'Production'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+      name: 'Production' # Optional: Define a GitHub environment for protection rules
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }} # Output the deployed URL
 
     steps:
-      # We need to set the image_name again in this job
-      - name: Set repo name to lowercase
-        run: |
-          REPO_OWNER_LC=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
-          echo "image_name=ghcr.io/${REPO_OWNER_LC}/$(echo '${{ github.event.repository.name }}' | tr '[:upper:]' '[:lower:]')/solotype-frontend" >> $GITHUB_ENV
-
-      # Login to Azure using service principal credentials stored in AZURE_CREDENTIALS secret
-      # AZURE_CREDENTIALS should contain output from: az ad sp create-for-rbac --name "myApp" --role contributor \
-      # --scopes /subscriptions/{subscription-id}/resourceGroups/{resource-group}/providers/Microsoft.Web/sites/{app-name} \
-      # --sdk-auth
+      # Login to Azure using the Service Principal credentials stored in secrets
       - name: Login to Azure
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      # Deploy to Azure Web App using the container image from GHCR
-      # The image reference must exactly match what was pushed to GHCR
+      # Deploy the specific image tag from GHCR to Azure Web App
       - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+        id: deploy-to-webapp # Give the step an ID to reference its outputs
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          images: '${{ env.image_name }}:${{ github.sha }}'
-          
-      # Optional: Logout from Azure after deployment
+          # Specify the exact image built in the previous job using commit SHA
+          images: '${{ env.IMAGE_NAME }}:${{ github.sha }}'
+
+      # Optional: Logout from Azure
       - name: Logout from Azure
         run: az logout
-        if: always() 
+        if: always() # Run this even if previous steps fail
