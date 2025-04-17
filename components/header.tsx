@@ -64,6 +64,12 @@ export default function Header() {
           >
             Leaderboard
           </Link>
+          <Link
+            href="/history"
+            className={`text-sm font-medium hover:text-solo-purple-light transition-colors ${pathname === "/history" ? "text-solo-purple-light" : ""}`}
+          >
+            History
+          </Link>
 
           {isLoading ? (
             // Show loading state
@@ -163,6 +169,13 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               Leaderboard
+            </Link>
+            <Link
+              href="/history"
+              className="px-4 py-2 text-sm font-medium hover:bg-solo-purple/20 rounded-md"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              History
             </Link>
 
             <div className="flex flex-col gap-2 px-4 pt-2">
