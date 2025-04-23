@@ -17,13 +17,13 @@ export const testResultSchema = z.object({
 export type TestResultSubmission = z.infer<typeof testResultSchema>;
 
 // Standard API response structure
-interface ApiResponse<T = any> {
+interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: {
     message: string;
     code?: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -33,14 +33,14 @@ interface ApiResponse<T = any> {
 export function createSuccessResponse<T>(data: T, status = 200): Response {
   const responseBody: ApiResponse<T> = {
     success: true,
-    data
+    data,
   };
-  
+
   return new Response(JSON.stringify(responseBody), {
     status,
     headers: {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   });
 }
 
@@ -50,7 +50,7 @@ export function createSuccessResponse<T>(data: T, status = 200): Response {
 export function createErrorResponse(
   message: string,
   status = 400,
-  details?: any,
+  details?: unknown,
   code?: string
 ): Response {
   const responseBody: ApiResponse = {
@@ -58,15 +58,15 @@ export function createErrorResponse(
     error: {
       message,
       code,
-      details
-    }
+      details,
+    },
   };
-  
+
   return new Response(JSON.stringify(responseBody), {
     status,
     headers: {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   });
 }
 
@@ -94,32 +94,35 @@ export async function authenticateRequest(req: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return {
         success: false,
-        response: createErrorResponse('Authorization header missing or invalid', 401)
+        response: createErrorResponse(
+          'Authorization header missing or invalid',
+          401
+        ),
       };
     }
-    
+
     const token = authHeader.substring(7);
     if (!token) {
       return {
         success: false,
-        response: createErrorResponse('Token missing', 401)
+        response: createErrorResponse('Token missing', 401),
       };
     }
-    
+
     // Verify token
     const decodedToken = await verifyToken(token);
     return {
       success: true,
       data: {
         uid: decodedToken.uid,
-        email: decodedToken.email
-      }
+        email: decodedToken.email,
+      },
     };
   } catch (error) {
     errorLog('[API] Authentication error:', error);
     return {
       success: false,
-      response: createErrorResponse('Authentication failed', 401)
+      response: createErrorResponse('Authentication failed', 401),
     };
   }
-} 
+}

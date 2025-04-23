@@ -1,12 +1,11 @@
-import type React from "react"
-import "../globals.css"
-import "./leaderboard.css"
+import type React from 'react';
+import '../globals.css';
+import './leaderboard.css';
 
 export default function LeaderboardLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return <>{children}</>
+  return <>{children}</>;
 }
-

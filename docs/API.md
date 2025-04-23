@@ -5,6 +5,7 @@
 All SoloType APIs are versioned using URL path versioning. The current stable version is `v1`.
 
 Example:
+
 ```
 https://example.com/api/v1/test-results
 ```
@@ -32,6 +33,7 @@ GET /api/v1/health
 Returns the current API status. This endpoint does not require authentication.
 
 **Response:**
+
 ```json
 {
   "status": "OK",
@@ -51,12 +53,14 @@ GET /api/v1/test-results
 Retrieves paginated test results for the authenticated user.
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `limit` (optional): Results per page (default: 10, max: 100)
 - `sortBy` (optional): Field to sort by (default: "createdAt")
 - `sortOrder` (optional): Sort order, "asc" or "desc" (default: "desc")
 
 **Response:**
+
 ```json
 {
   "results": [
@@ -96,6 +100,7 @@ POST /api/v1/test-results
 Saves a new test result for the authenticated user.
 
 **Request Body:**
+
 ```json
 {
   "wpm": 75,
@@ -108,6 +113,7 @@ Saves a new test result for the authenticated user.
 ```
 
 **Response:**
+
 ```json
 {
   "message": "Test result saved successfully",
@@ -136,6 +142,7 @@ GET /api/v1/profile
 Retrieves the profile for the authenticated user.
 
 **Response:**
+
 ```json
 {
   "profile": {
@@ -158,6 +165,7 @@ PUT /api/v1/profile
 Updates the profile for the authenticated user.
 
 **Request Body:**
+
 ```json
 {
   "displayName": "Jane Doe",
@@ -167,6 +175,7 @@ Updates the profile for the authenticated user.
 ```
 
 **Response:**
+
 ```json
 {
   "profile": {
@@ -185,6 +194,7 @@ Updates the profile for the authenticated user.
 All API endpoints return appropriate HTTP status codes and error messages in case of errors.
 
 **Example Error Response:**
+
 ```json
 {
   "error": "Authentication failed",
@@ -193,6 +203,7 @@ All API endpoints return appropriate HTTP status codes and error messages in cas
 ```
 
 Common error status codes:
+
 - `400 Bad Request`: Invalid request parameters or body
 - `401 Unauthorized`: Missing or invalid authentication
 - `403 Forbidden`: Authentication succeeded but user lacks permission
@@ -202,7 +213,8 @@ Common error status codes:
 ## Rate Limiting
 
 API requests are subject to rate limiting to prevent abuse. The current limits are:
+
 - 100 requests per minute per IP address
 - 1000 requests per hour per user ID
 
-When rate limits are exceeded, the API will return a `429 Too Many Requests` status code. 
+When rate limits are exceeded, the API will return a `429 Too Many Requests` status code.

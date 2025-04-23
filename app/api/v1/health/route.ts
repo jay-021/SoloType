@@ -7,10 +7,10 @@ import { infoLog } from '@/lib/logger';
  */
 export async function GET() {
   infoLog('[API] Health check requested');
-  
+
   return NextResponse.json({
     status: 'OK',
     version: 'v1',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-} 
+}

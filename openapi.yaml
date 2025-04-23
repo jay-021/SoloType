@@ -1,0 +1,315 @@
+openapi: 3.0.0
+info:
+  title: SoloType API
+  version: 1.0.0
+  description: API for SoloType typing test application
+servers:
+  - url: /api/v1
+    description: API v1 base URL
+paths:
+  /test-results:
+    post:
+      summary: Submit a new test result
+      description: Records a new typing test result for the authenticated user
+      operationId: submitTestResult
+      tags:
+        - Test Results
+      security:
+        - HTTPBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TestResultSubmission'
+      responses:
+        '201':
+          description: Test result created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/PostSuccessData'
+        '400':
+          description: Bad Request (Validation Error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized (Authentication Error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: Get test results history
+      description: Retrieves paginated test results for the authenticated user
+      operationId: getTestHistory
+      tags:
+        - Test Results
+      security:
+        - HTTPBearer: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number for pagination (1-based indexing)
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: sortBy
+          in: query
+          description: Field to sort results by
+          schema:
+            type: string
+            default: createdAt
+        - name: sortOrder
+          in: query
+          description: Sort direction
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/GetSuccessData'
+        '400':
+          description: Bad Request (Invalid Query Params)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized (Authentication Error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Firebase Authentication token
+  schemas:
+    TestResultSubmission:
+      type: object
+      required:
+        - wpm
+        - accuracy
+        - testDuration
+        - wordsTyped
+        - difficulty
+      properties:
+        wpm:
+          type: number
+          description: Words per minute
+          minimum: 1
+          maximum: 500
+          example: 65
+        accuracy:
+          type: number
+          description: Typing accuracy percentage
+          minimum: 0
+          maximum: 100
+          example: 95.5
+        rank:
+          type: string
+          description: Skill rank
+          enum: [e, d, c, b, a, s]
+          default: e
+          example: c
+        testDuration:
+          type: number
+          description: Test duration in minutes
+          minimum: 0.5
+          maximum: 30
+          example: 1
+        wordsTyped:
+          type: integer
+          description: Number of words typed
+          minimum: 0
+          example: 65
+        difficulty:
+          type: string
+          description: Test difficulty level
+          minLength: 1
+          example: medium
+        selectedRank:
+          type: string
+          description: Rank selected by the user
+          example: b
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp of when the test was completed (ISO-8601)
+          example: '2023-04-15T14:30:00Z'
+    SavedTestResult:
+      allOf:
+        - $ref: '#/components/schemas/TestResultSubmission'
+        - type: object
+          required:
+            - id
+            - userId
+            - createdAt
+          properties:
+            id:
+              type: string
+              description: Unique identifier for the test result
+              example: 64a1b23c4d5e6f7g8h9i0j11
+            userId:
+              type: string
+              description: User ID of the test taker
+              example: uQw3rTy1Op2A3s4D5f6G7h8J9k0L
+            createdAt:
+              type: string
+              format: date-time
+              description: Timestamp when the result was saved in the database
+              example: '2023-04-15T14:30:00Z'
+    PaginationMetadata:
+      type: object
+      required:
+        - total
+        - page
+        - limit
+        - totalPages
+        - hasNextPage
+        - hasPrevPage
+      properties:
+        total:
+          type: integer
+          description: Total number of results
+          example: 42
+        page:
+          type: integer
+          description: Current page number
+          example: 2
+        limit:
+          type: integer
+          description: Number of results per page
+          example: 10
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 5
+        hasNextPage:
+          type: boolean
+          description: Whether there is a next page
+          example: true
+        hasPrevPage:
+          type: boolean
+          description: Whether there is a previous page
+          example: true
+    SortMetadata:
+      type: object
+      required:
+        - sortBy
+        - sortOrder
+      properties:
+        sortBy:
+          type: string
+          description: Field used for sorting
+          example: createdAt
+        sortOrder:
+          type: string
+          enum: [asc, desc]
+          description: Sort direction
+          example: desc
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          required:
+            - message
+          properties:
+            message:
+              type: string
+              description: Human-readable error message
+              example: Invalid request data
+            code:
+              type: string
+              description: Error code
+              example: VALIDATION_ERROR
+            details:
+              type: object
+              description: Additional error details
+              example:
+                wpm:
+                  _errors: ["Number must be greater than 0"]
+    PostSuccessData:
+      type: object
+      required:
+        - message
+        - id
+        - testResult
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: Test result saved successfully
+        id:
+          type: string
+          description: ID of the saved test result
+          example: 64a1b23c4d5e6f7g8h9i0j11
+        testResult:
+          $ref: '#/components/schemas/SavedTestResult'
+    GetSuccessData:
+      type: object
+      required:
+        - results
+        - pagination
+        - meta
+      properties:
+        results:
+          type: array
+          description: List of test results
+          items:
+            $ref: '#/components/schemas/SavedTestResult'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+        meta:
+          $ref: '#/components/schemas/SortMetadata' 

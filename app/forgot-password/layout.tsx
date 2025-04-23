@@ -1,12 +1,11 @@
-import type React from "react"
-import "../globals.css"
-import "../auth.css"
+import type React from 'react';
+import '../globals.css';
+import '../auth.css';
 
 export default function ForgotPasswordLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return <>{children}</>
+  return <>{children}</>;
 }
-

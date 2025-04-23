@@ -6,12 +6,14 @@ const apps = getApps();
 
 // Private key comes from environment variable as a string with escaped newlines
 // We need to properly format it by replacing \\n with actual newlines
-const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY 
+const privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY
   ? process.env.FIREBASE_ADMIN_PRIVATE_KEY.replace(/\\n/g, '\n')
   : undefined;
 
 if (!privateKey) {
-  console.warn('[Firebase Admin] Warning: FIREBASE_ADMIN_PRIVATE_KEY is not defined');
+  console.warn(
+    '[Firebase Admin] Warning: FIREBASE_ADMIN_PRIVATE_KEY is not defined'
+  );
 }
 
 // Initialize Firebase Admin SDK if not already initialized
@@ -26,7 +28,10 @@ if (!apps.length) {
     });
     console.log('[Firebase Admin] Initialized Firebase Admin SDK');
   } catch (error) {
-    console.error('[Firebase Admin] Error initializing Firebase Admin SDK:', error);
+    console.error(
+      '[Firebase Admin] Error initializing Firebase Admin SDK:',
+      error
+    );
     throw error;
   }
 } else {
@@ -34,4 +39,4 @@ if (!apps.length) {
 }
 
 // Export the auth admin instance
-export const authAdmin = getAuth(); 
+export const authAdmin = getAuth();

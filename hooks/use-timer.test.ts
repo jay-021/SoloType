@@ -14,12 +14,14 @@ describe('useTimer', () => {
   });
 
   it('should initialize with default values', () => {
-    const { result } = renderHook(() => useTimer({ 
-      duration: 1
-    }));
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 1,
+      })
+    );
 
     const [timerState, _] = result.current;
-    
+
     expect(timerState.timeLeft).toBe(0);
     expect(timerState.isActive).toBe(false);
     expect(timerState.startTime).toBe(0);
@@ -27,9 +29,11 @@ describe('useTimer', () => {
   });
 
   it('should start the timer when start() is called', () => {
-    const { result } = renderHook(() => useTimer({ 
-      duration: 1
-    }));
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 1,
+      })
+    );
 
     // Mock Date.now() to return a fixed value
     const mockNow = 1000;
@@ -41,16 +45,18 @@ describe('useTimer', () => {
     });
 
     const [timerState, _] = result.current;
-    
+
     expect(timerState.isActive).toBe(true);
     expect(timerState.timeLeft).toBe(60); // 1 minute = 60 seconds
     expect(timerState.startTime).toBe(mockNow);
   });
 
   it('should decrement timeLeft every second', () => {
-    const { result } = renderHook(() => useTimer({ 
-      duration: 1
-    }));
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 1,
+      })
+    );
 
     act(() => {
       const [_, controls] = result.current;
@@ -74,11 +80,13 @@ describe('useTimer', () => {
 
   it('should call onComplete when timer reaches zero', () => {
     const onCompleteMock = vi.fn();
-    
-    const { result } = renderHook(() => useTimer({ 
-      duration: 0.05, // 3 seconds (0.05 minutes)
-      onComplete: onCompleteMock
-    }));
+
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 0.05, // 3 seconds (0.05 minutes)
+        onComplete: onCompleteMock,
+      })
+    );
 
     act(() => {
       const [_, controls] = result.current;
@@ -104,9 +112,11 @@ describe('useTimer', () => {
   });
 
   it('should stop the timer when stop() is called', () => {
-    const { result } = renderHook(() => useTimer({ 
-      duration: 1
-    }));
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 1,
+      })
+    );
 
     act(() => {
       const [_, controls] = result.current;
@@ -125,15 +135,17 @@ describe('useTimer', () => {
   });
 
   it('should format time correctly', () => {
-    const { result } = renderHook(() => useTimer({ 
-      duration: 1
-    }));
+    const { result } = renderHook(() =>
+      useTimer({
+        duration: 1,
+      })
+    );
 
     const [_, controls] = result.current;
-    
+
     expect(controls.formatTime(65)).toBe('1:05');
     expect(controls.formatTime(126)).toBe('2:06');
     expect(controls.formatTime(3599)).toBe('59:59');
     expect(controls.formatTime(0)).toBe('0:00');
   });
-}); 
+});

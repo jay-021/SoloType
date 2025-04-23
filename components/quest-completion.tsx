@@ -1,40 +1,40 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import SystemNotification from "@/components/system-notification"
+import { useState, useEffect } from 'react';
+import SystemNotification from '@/components/system-notification';
 
 interface QuestCompletionProps {
-  wpm: number
-  accuracy: number
-  rank: string
-  questName?: string
-  xpGained?: number
-  onClose: () => void
+  wpm: number;
+  accuracy: number;
+  rank: string;
+  questName?: string;
+  xpGained?: number;
+  onClose: () => void;
 }
 
 export default function QuestCompletion({
   wpm,
   accuracy,
   rank,
-  questName = "Typing Test",
+  questName = 'Typing Test',
   xpGained = 100,
   onClose,
 }: QuestCompletionProps) {
-  const [showNotification, setShowNotification] = useState(false)
+  const [showNotification, setShowNotification] = useState(false);
 
   useEffect(() => {
     // Show notification after a short delay
     const timer = setTimeout(() => {
-      setShowNotification(true)
-    }, 1000)
+      setShowNotification(true);
+    }, 1000);
 
-    return () => clearTimeout(timer)
-  }, [])
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNotificationClose = () => {
-    setShowNotification(false)
-    onClose()
-  }
+    setShowNotification(false);
+    onClose();
+  };
 
   return (
     <>
@@ -52,6 +52,5 @@ export default function QuestCompletion({
         />
       )}
     </>
-  )
+  );
 }
-

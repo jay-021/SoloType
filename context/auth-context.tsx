@@ -1,17 +1,23 @@
-"use client"
+'use client';
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import SystemNotification from "@/components/system-notification"
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signInWithPopup, 
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from 'react';
+import SystemNotification from '@/components/system-notification';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
   onAuthStateChanged,
   updateProfile,
-  User as FirebaseUser
-} from "firebase/auth"
-import { auth, googleProvider } from "@/lib/firebase/config"
+  User as FirebaseUser,
+} from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase/config';
 
 /*
  * NOTE: Authentication is temporarily disabled
@@ -40,177 +46,228 @@ const userPool = new CognitoUserPool(poolData)
 
 // User type definition
 export interface User {
-  id: string
-  username: string
-  email: string
-  rank: "e" | "d" | "c" | "b" | "a" | "s"
-  level: number
-  xp: number
-  xpToNextLevel: number
-  joinDate: string
-  completedQuests: number
-  isFirstLogin: boolean
-  role: "player" | "admin"
+  id: string;
+  username: string;
+  email: string;
+  rank: 'e' | 'd' | 'c' | 'b' | 'a' | 's';
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  joinDate: string;
+  completedQuests: number;
+  isFirstLogin: boolean;
+  role: 'player' | 'admin';
 }
+
+// Define notification data types
+interface SignupNotificationData {
+  type: 'signup';
+}
+
+interface LoginNotificationData {
+  type: 'login';
+}
+
+interface LevelUpNotificationData {
+  type: 'levelup';
+  level: number;
+}
+
+interface QuestNotificationData {
+  type: 'quest';
+  questName: string;
+  xpGained: number | string;
+  rank: string;
+}
+
+// Union type for all notification data
+type NotificationData = 
+  | SignupNotificationData 
+  | LoginNotificationData 
+  | LevelUpNotificationData 
+  | QuestNotificationData;
 
 interface AuthContextType {
-  user: User | null
-  isLoading: boolean
-  isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
-  signup: (email: string, username: string, password: string) => Promise<void>
-  signInWithGoogle: () => Promise<void>
-  logout: () => void
-  showNotification: (type: "signup" | "login" | "levelup" | "quest", data?: any) => void
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, username: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  logout: () => void;
+  showNotification: (
+    type: 'signup' | 'login' | 'levelup' | 'quest',
+    data?: Record<string, unknown>
+  ) => void;
   notificationState: {
-    show: boolean
-    type: "signup" | "login" | "levelup" | "quest"
-    data?: any
-  }
-  closeNotification: () => void
-  error: string | null
-  clearError: () => void
+    show: boolean;
+    type: 'signup' | 'login' | 'levelup' | 'quest';
+    data?: Record<string, unknown>;
+  };
+  closeNotification: () => void;
+  error: string | null;
+  clearError: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [notificationState, setNotificationState] = useState<{
-    show: boolean
-    type: "signup" | "login" | "levelup" | "quest"
-    data?: any
-  }>({ show: false, type: "login" })
+    show: boolean;
+    type: 'signup' | 'login' | 'levelup' | 'quest';
+    data?: Record<string, unknown>;
+  }>({ show: false, type: 'login' });
 
   // Derived state - no need to maintain separate state
-  const isAuthenticated = !!user
+  const isAuthenticated = !!user;
 
   // Clear error helper
-  const clearError = () => setError(null)
+  const clearError = () => setError(null);
 
   // Check for existing session on mount using Firebase onAuthStateChanged
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      setIsLoading(true)
-      
+      setIsLoading(true);
+
       if (authUser) {
         // User is signed in
-        setFirebaseUser(authUser)
-        
+        setFirebaseUser(authUser);
+
         // Create our app's user object from Firebase user
         const userData: User = {
           id: authUser.uid,
-          username: authUser.displayName || authUser.email?.split('@')[0] || 'Hunter',
+          username:
+            authUser.displayName || authUser.email?.split('@')[0] || 'Hunter',
           email: authUser.email || '',
           // Default values for new users
-          rank: "e",
+          rank: 'e',
           level: 1,
           xp: 0,
           xpToNextLevel: 100,
           joinDate: new Date().toISOString(),
           completedQuests: 0,
           isFirstLogin: false, // Will be updated once we have a database
-          role: "player",
-        }
-        
-        setUser(userData)
+          role: 'player',
+        };
+
+        setUser(userData);
       } else {
         // User is signed out
-        setFirebaseUser(null)
-        setUser(null)
+        setFirebaseUser(null);
+        setUser(null);
       }
-      
-      setIsLoading(false)
-    })
+
+      setIsLoading(false);
+    });
 
     // Cleanup subscription
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
   // Sign up with Firebase
   const signup = async (email: string, username: string, password: string) => {
-    setIsLoading(true)
-    clearError()
+    setIsLoading(true);
+    clearError();
 
     try {
       // Create the user with email and password
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-      
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       // Update the profile to include the username
       await updateProfile(userCredential.user, {
-        displayName: username
-      })
-      
+        displayName: username,
+      });
+
       // Show signup notification
-      showNotification("signup")
-    } catch (err: any) {
-      console.error("Signup error:", err)
-      setError(err.message || "Failed to create account. Please try again.")
-      throw err
+      showNotification('signup');
+    } catch (err: unknown) {
+      console.error('Signup error:', err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Failed to create account. Please try again.'
+      );
+      throw err;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Login with Firebase
   const login = async (email: string, password: string) => {
-    setIsLoading(true)
-    clearError()
+    setIsLoading(true);
+    clearError();
 
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      await signInWithEmailAndPassword(auth, email, password);
       // Show login notification
-      showNotification("login")
-    } catch (err: any) {
-      console.error("Login error:", err)
-      setError(err.message || "Invalid email or password. Please try again.")
-      throw err
+      showNotification('login');
+    } catch (err: unknown) {
+      console.error('Login error:', err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Invalid email or password. Please try again.'
+      );
+      throw err;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Sign in with Google
   const signInWithGoogle = async () => {
-    setIsLoading(true)
-    clearError()
+    setIsLoading(true);
+    clearError();
 
     try {
-      await signInWithPopup(auth, googleProvider)
+      await signInWithPopup(auth, googleProvider);
       // Show login notification
-      showNotification("login")
-    } catch (err: any) {
-      console.error("Google sign-in error:", err)
-      setError(err.message || "Failed to sign in with Google. Please try again.")
-      throw err
+      showNotification('login');
+    } catch (err: unknown) {
+      console.error('Google sign-in error:', err);
+      setError(
+        err instanceof Error 
+          ? err.message 
+          : 'Failed to sign in with Google. Please try again.'
+      );
+      throw err;
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Logout from Firebase
   const logout = () => {
     firebaseSignOut(auth)
       .then(() => {
-        setUser(null)
+        setUser(null);
       })
       .catch((error) => {
-        console.error("Logout error:", error)
-      })
-  }
+        console.error('Logout error:', error);
+      });
+  };
 
   // Show system notification
-  const showNotification = (type: "signup" | "login" | "levelup" | "quest", data?: any) => {
-    setNotificationState({ show: true, type, data })
-  }
+  const showNotification = (
+    type: 'signup' | 'login' | 'levelup' | 'quest',
+    data?: Record<string, unknown>
+  ) => {
+    setNotificationState({ show: true, type, data });
+  };
 
   // Close notification
   const closeNotification = () => {
-    setNotificationState((prev) => ({ ...prev, show: false }))
-  }
+    setNotificationState((prev) => ({ ...prev, show: false }));
+  };
 
   return (
     <AuthContext.Provider
@@ -231,17 +288,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
       {notificationState.show && (
-        <SystemNotification type={notificationState.type} data={notificationState.data} onClose={closeNotification} />
+        <SystemNotification
+          type={notificationState.type}
+          data={notificationState.data}
+          onClose={closeNotification}
+        />
       )}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider")
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }
-

@@ -1,74 +1,87 @@
 /**
  * Logger utility for consistent logging across the application
+ * Uses Pino for structured logging
  */
+import pino from 'pino';
 
-// Define log levels
-const LOG_LEVELS = {
-  DEBUG: 1,
-  INFO: 2,
-  WARN: 3,
-  ERROR: 4,
-};
-
-// Set the current log level based on environment
-// In production, we might want to suppress debug logs
-// But allow override with NEXT_PUBLIC_ENABLE_DEBUG_LOGGING=true
+// Determine environment
+const isProduction = process.env.NODE_ENV === 'production';
 const isDebugEnabled = 
-  process.env.NODE_ENV !== 'production' || 
+  !isProduction || 
   process.env.NEXT_PUBLIC_ENABLE_DEBUG_LOGGING === 'true';
 
-const CURRENT_LOG_LEVEL = isDebugEnabled
-  ? LOG_LEVELS.DEBUG
-  : LOG_LEVELS.INFO;
+// Configure Pino logger based on environment
+const pinoLogger = pino({
+  level: isDebugEnabled ? 'debug' : 'info',
+  
+  // Different configuration for development vs production
+  ...(isProduction 
+    ? {
+        // Production: Use JSON format with standard fields
+        // Pino defaults to including pid, hostname, level, time, msg
+      } 
+    : {
+        // Development: Use pretty-printing for readability
+        transport: {
+          target: 'pino-pretty',
+          options: {
+            colorize: true,
+            translateTime: 'SYS:standard',
+            ignore: 'pid,hostname',
+          },
+        },
+      }
+  ),
+});
 
 /**
  * Debug level logging
  */
-export function debugLog(message: string, data?: any) {
-  if (CURRENT_LOG_LEVEL <= LOG_LEVELS.DEBUG) {
-    if (data) {
-      console.log(`[DEBUG] ${message}`, data);
-    } else {
-      console.log(`[DEBUG] ${message}`);
-    }
+export function debugLog(message: string, data?: unknown) {
+  if (data) {
+    pinoLogger.debug({ data }, message);
+  } else {
+    pinoLogger.debug(message);
   }
 }
 
 /**
  * Info level logging
  */
-export function infoLog(message: string, data?: any) {
-  if (CURRENT_LOG_LEVEL <= LOG_LEVELS.INFO) {
-    if (data) {
-      console.log(`[INFO] ${message}`, data);
-    } else {
-      console.log(`[INFO] ${message}`);
-    }
+export function infoLog(message: string, data?: unknown) {
+  if (data) {
+    pinoLogger.info({ data }, message);
+  } else {
+    pinoLogger.info(message);
   }
 }
 
 /**
  * Warning level logging
  */
-export function warnLog(message: string, data?: any) {
-  if (CURRENT_LOG_LEVEL <= LOG_LEVELS.WARN) {
-    if (data) {
-      console.warn(`[WARN] ${message}`, data);
-    } else {
-      console.warn(`[WARN] ${message}`);
-    }
+export function warnLog(message: string, data?: unknown) {
+  if (data) {
+    pinoLogger.warn({ data }, message);
+  } else {
+    pinoLogger.warn(message);
   }
 }
 
 /**
  * Error level logging
+ * Ensures error stack traces are included when available
  */
-export function errorLog(message: string, error?: any) {
-  if (CURRENT_LOG_LEVEL <= LOG_LEVELS.ERROR) {
-    if (error) {
-      console.error(`[ERROR] ${message}`, error);
+export function errorLog(message: string, error?: unknown) {
+  if (error) {
+    // Check if error is an Error object that has a stack trace
+    if (error instanceof Error) {
+      // Pass error directly to ensure stack trace is captured
+      pinoLogger.error({ err: error }, message);
     } else {
-      console.error(`[ERROR] ${message}`);
+      // Handle case where error might be a string or other type
+      pinoLogger.error({ data: error }, message);
     }
+  } else {
+    pinoLogger.error(message);
   }
-} 
+}

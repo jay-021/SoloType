@@ -28,50 +28,55 @@ export interface TestResultsFilterActions {
 
 /**
  * Hook for filtering test results by various criteria
- * 
+ *
  * @param results - The test results to filter
  * @returns Filtered results and filter actions
  */
-export function useTestResultsFilter(results: TestResultRecord[]): [TestResultRecord[], TestResultsFilter, TestResultsFilterActions] {
+export function useTestResultsFilter(
+  results: TestResultRecord[]
+): [TestResultRecord[], TestResultsFilter, TestResultsFilterActions] {
   // Filter state
   const [filters, setFilters] = useState<TestResultsFilter>({
     duration: null,
     rank: null,
     dateFrom: null,
-    dateTo: null
+    dateTo: null,
   });
-  
+
   /**
    * Filter by test duration
    */
   const setDurationFilter = useCallback((duration: number | null) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      duration
+      duration,
     }));
   }, []);
-  
+
   /**
    * Filter by rank/difficulty
    */
   const setRankFilter = useCallback((rank: string | null) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      rank
+      rank,
     }));
   }, []);
-  
+
   /**
    * Filter by date range
    */
-  const setDateRange = useCallback((dateFrom: Date | null, dateTo: Date | null) => {
-    setFilters(prev => ({
-      ...prev,
-      dateFrom,
-      dateTo
-    }));
-  }, []);
-  
+  const setDateRange = useCallback(
+    (dateFrom: Date | null, dateTo: Date | null) => {
+      setFilters((prev) => ({
+        ...prev,
+        dateFrom,
+        dateTo,
+      }));
+    },
+    []
+  );
+
   /**
    * Clear all filters
    */
@@ -80,52 +85,55 @@ export function useTestResultsFilter(results: TestResultRecord[]): [TestResultRe
       duration: null,
       rank: null,
       dateFrom: null,
-      dateTo: null
+      dateTo: null,
     });
   }, []);
-  
+
   /**
    * Apply filters to test results
    */
   const filteredResults = useMemo(() => {
-    return results.filter(result => {
+    return results.filter((result) => {
       // Filter by duration
-      if (filters.duration !== null && result.testDuration !== filters.duration) {
+      if (
+        filters.duration !== null &&
+        result.testDuration !== filters.duration
+      ) {
         return false;
       }
-      
+
       // Filter by rank
       if (filters.rank !== null && result.rank !== filters.rank) {
         return false;
       }
-      
+
       // Filter by date range
       const resultDate = new Date(result.timestamp);
-      
+
       if (filters.dateFrom !== null && resultDate < filters.dateFrom) {
         return false;
       }
-      
+
       if (filters.dateTo !== null) {
         // Set the date to end of day for inclusive comparison
         const endDate = new Date(filters.dateTo);
         endDate.setHours(23, 59, 59, 999);
-        
+
         if (resultDate > endDate) {
           return false;
         }
       }
-      
+
       return true;
     });
   }, [results, filters]);
-  
+
   const filterActions: TestResultsFilterActions = {
     setDurationFilter,
     setRankFilter,
     setDateRange,
-    clearFilters
+    clearFilters,
   };
-  
+
   return [filteredResults, filters, filterActions];
-} 
+}

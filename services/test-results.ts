@@ -1,6 +1,6 @@
 /**
  * Test Results Service
- * 
+ *
  * Handles API requests related to typing test results
  */
 import { auth } from '@/lib/firebase/config';
@@ -33,13 +33,27 @@ export interface TestResultSubmission {
   createdAt?: string;
 }
 
+// Define interface for raw API result from the database
+interface RawTestResult {
+  _id?: string;
+  id?: string;
+  userId: string;
+  wpm: number;
+  accuracy: number;
+  rank: 'e' | 'd' | 'c' | 'b' | 'a' | 's';
+  testDuration: number;
+  wordsTyped: number;
+  timestamp: string;
+  [key: string]: unknown; // For any other fields that might be present
+}
+
 /**
  * Test results service for API operations
  */
 export const testResultsService = {
   /**
    * Fetch test history for the current user
-   * 
+   *
    * @returns Promise with the fetched test results
    */
   async fetchHistory(): Promise<TestResultRecord[]> {
@@ -52,13 +66,13 @@ export const testResultsService = {
 
       // Get authentication token
       const idToken = await user.getIdToken(true);
-      
+
       debugLog('Fetching test results with token');
 
       // Fetch results from API
       const response = await fetch('/api/v1/test-results', {
         headers: {
-          'Authorization': `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
       });
 
@@ -70,7 +84,7 @@ export const testResultsService = {
       // Parse response data
       const data = await response.json();
       debugLog('Received API response:', data);
-      
+
       // Check if response has results array
       if (!data || !Array.isArray(data.results)) {
         debugLog('Unexpected API response format:', data);
@@ -78,9 +92,11 @@ export const testResultsService = {
       }
 
       // Ensure consistent ID format (MongoDB uses _id, we want id)
-      return data.results.map((result: any) => ({
+      return data.results.map((result: RawTestResult) => ({
         ...result,
-        id: result.id || (result._id ? result._id.toString() : `unknown-${Date.now()}`),
+        id:
+          result.id ||
+          (result._id ? result._id.toString() : `unknown-${Date.now()}`),
       }));
     } catch (error) {
       errorLog('Error fetching test results:', error);
@@ -90,7 +106,7 @@ export const testResultsService = {
 
   /**
    * Save a new test result
-   * 
+   *
    * @param result The test result to save
    * @returns Promise with the saved result ID
    */
@@ -110,7 +126,7 @@ export const testResultsService = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify(result),
       });
@@ -122,7 +138,7 @@ export const testResultsService = {
 
       // Parse response
       const data = await response.json();
-      
+
       // Updated to handle the new API response format
       if (!data || !data.id) {
         debugLog('Unexpected API response format:', data);
@@ -135,4 +151,4 @@ export const testResultsService = {
       throw error;
     }
   },
-}; 
+};

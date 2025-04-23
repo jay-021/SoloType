@@ -34,19 +34,21 @@
 }
 
 @font-face {
-  font-family: "SoloLeveling";
-  src: url("/fonts/solo-leveling.woff2") format("woff2");
+  font-family: 'SoloLeveling';
+  src: url('/fonts/solo-leveling.woff2') format('woff2');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
 }
 
 .solo-font {
-  font-family: "SoloLeveling", sans-serif;
+  font-family: 'SoloLeveling', sans-serif;
 }
 
 .glow-text {
-  text-shadow: 0 0 10px rgba(139, 92, 246, 0.7), 0 0 20px rgba(139, 92, 246, 0.5);
+  text-shadow:
+    0 0 10px rgba(139, 92, 246, 0.7),
+    0 0 20px rgba(139, 92, 246, 0.5);
 }
 
 .glow-box {
@@ -103,14 +105,22 @@
 .eye-left {
   top: 30%;
   left: 25%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, rgba(139, 92, 246, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(139, 92, 246, 0.8) 0%,
+    rgba(139, 92, 246, 0) 70%
+  );
   box-shadow: 0 0 20px 10px rgba(139, 92, 246, 0.3);
 }
 
 .eye-right {
   top: 30%;
   right: 25%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, rgba(59, 130, 246, 0) 70%);
+  background: radial-gradient(
+    circle,
+    rgba(59, 130, 246, 0.8) 0%,
+    rgba(59, 130, 246, 0) 70%
+  );
   box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.3);
 }
 
@@ -209,7 +219,7 @@
 }
 
 .typing-text span.current::after {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   bottom: 0;
@@ -286,14 +296,18 @@
 
 /* Keyboard glow effects */
 .key-glow-blue {
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.7), 0 0 30px rgba(59, 130, 246, 0.4);
+  box-shadow:
+    0 0 15px rgba(59, 130, 246, 0.7),
+    0 0 30px rgba(59, 130, 246, 0.4);
   border-color: rgba(59, 130, 246, 0.8) !important;
   background-color: rgba(59, 130, 246, 0.3) !important;
   transform: translateY(2px);
 }
 
 .key-glow-purple {
-  box-shadow: 0 0 15px rgba(139, 92, 246, 0.7), 0 0 30px rgba(139, 92, 246, 0.4);
+  box-shadow:
+    0 0 15px rgba(139, 92, 246, 0.7),
+    0 0 30px rgba(139, 92, 246, 0.4);
   border-color: rgba(139, 92, 246, 0.8) !important;
   background-color: rgba(139, 92, 246, 0.3) !important;
   transform: translateY(2px);
@@ -372,4 +386,3 @@
   opacity: 1 !important;
   backdrop-filter: none !important;
 }
-

@@ -1,0 +1,17 @@
+{
+  "ignores": [
+    "@eslint/*",
+    "@next/eslint-plugin-next",
+    "eslint-plugin-*",
+    "autoprefixer",
+    "postcss",
+    "prettier-plugin-*",
+    "typescript-eslint"
+  ],
+  "ignorePatterns": [
+    "build",
+    "dist",
+    "node_modules",
+    ".next"
+  ]
+} 

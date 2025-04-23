@@ -12,45 +12,47 @@ SoloType is a Solo Leveling themed typing test application that helps users impr
 
 ## Features
 
-* **Typing Test Interface**: Clean, responsive interface with real-time WPM and accuracy calculation
-* **Ranked Tests**: Practice with content of varying difficulty levels
-* **Test History**: Track and review your previous typing test results
-* **Dynamic Keyboard Display**: Visual feedback with highlighted keys as you type
-* **User Authentication**: Secure login with Firebase Authentication
-* **AI-Generated Content**: Test passages dynamically generated using AI
+- **Typing Test Interface**: Clean, responsive interface with real-time WPM and accuracy calculation
+- **Ranked Tests**: Practice with content of varying difficulty levels
+- **Test History**: Track and review your previous typing test results
+- **Dynamic Keyboard Display**: Visual feedback with highlighted keys as you type
+- **User Authentication**: Secure login with Firebase Authentication
+- **AI-Generated Content**: Test passages dynamically generated using AI
 
-*Note: The visual theme and colors (including WPM progress bar colors) are intentionally preserved during refactoring.*
+_Note: The visual theme and colors (including WPM progress bar colors) are intentionally preserved during refactoring._
 
 ## Tech Stack
 
-* **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Shadcn UI
-* **Backend**: Node.js API routes within Next.js
-* **Database**: MongoDB for test results and user data
-* **Authentication**: Firebase Authentication
-* **State Management**: React Context API (moving to Zustand)
-* **Package Manager**: PNPM
-* **Containerization**: Docker
-* **CI/CD**: GitHub Actions
-* **Hosting**: Azure Web Apps
+- **Frontend**: Next.js (App Router), React, TypeScript, Tailwind CSS, Shadcn UI
+- **Backend**: Node.js API routes within Next.js
+- **Database**: MongoDB for test results and user data
+- **Authentication**: Firebase Authentication
+- **State Management**: React Context API (moving to Zustand)
+- **Package Manager**: PNPM
+- **Containerization**: Docker
+- **CI/CD**: GitHub Actions
+- **Hosting**: Azure Web Apps
 
 ## Getting Started
 
 ### Prerequisites
 
-* Node.js 18.x or higher
-* PNPM 8.x or higher
-* MongoDB account (for database)
-* Firebase project (for authentication)
+- Node.js 18.x or higher
+- PNPM 8.x or higher
+- MongoDB account (for database)
+- Firebase project (for authentication)
 
 ### Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/jay-021/SoloType.git
    cd SoloType
    ```
 
 2. Install dependencies:
+
    ```
    pnpm install
    ```
@@ -66,11 +68,11 @@ SoloType is a Solo Leveling themed typing test application that helps users impr
    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
    NEXT_PUBLIC_FIREBASE_APP_ID=
-   
+
    # Firebase Admin (Server-side)
    FIREBASE_ADMIN_CLIENT_EMAIL=
    FIREBASE_ADMIN_PRIVATE_KEY=
-   
+
    # MongoDB
    MONGODB_URI=
    MONGODB_DB_NAME=
@@ -88,25 +90,25 @@ The application will be available at [http://localhost:3000](http://localhost:30
 
 ## Available Scripts
 
-* `pnpm dev` - Start the development server
-* `pnpm build` - Build the application for production
-* `pnpm start` - Start the production server
-* `pnpm lint` - Run linting checks
+- `pnpm dev` - Start the development server
+- `pnpm build` - Build the application for production
+- `pnpm start` - Start the production server
+- `pnpm lint` - Run linting checks
 
 ## Architecture Summary
 
 SoloType follows a modern architecture with:
 
-* Next.js App Router for frontend page routing
-* Layered API backend within Next.js (Controllers, Services, Repositories)
-* MongoDB for persistent data storage
-* Firebase Authentication for user management
+- Next.js App Router for frontend page routing
+- Layered API backend within Next.js (Controllers, Services, Repositories)
+- MongoDB for persistent data storage
+- Firebase Authentication for user management
 
 For detailed architecture information, see [PLANNING.md](./PLANNING.md).
 
 ## Testing
 
-*Note: Testing infrastructure is being set up as part of the refactoring effort.*
+_Note: Testing infrastructure is being set up as part of the refactoring effort._
 
 Once implemented, you'll be able to run tests with:
 
@@ -126,4 +128,4 @@ For active development tasks, see [TASK.md](./TASK.md).
 
 ---
 
-*SoloType - Sharpen your typing skills in the world of Solo Leveling*
+_SoloType - Sharpen your typing skills in the world of Solo Leveling_

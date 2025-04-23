@@ -116,3 +116,4 @@ alwaysApply: true
 *   **Generate Tests:** Create appropriate Vitest/Playwright tests for any new code.
 *   **Modify Carefully:** Only change code related to the assigned task. Do not delete/overwrite without explicit instruction.
 *   **Use PNPM:** Only use PNPM, do not use NPM.
+*   **Do not run two commands at the same time in terminal** Only run one command in one input.

@@ -21,17 +21,29 @@
 }
 
 .flame-gold .flame {
-  background: linear-gradient(to top, rgba(245, 158, 11, 0), rgba(245, 158, 11, 0.7));
+  background: linear-gradient(
+    to top,
+    rgba(245, 158, 11, 0),
+    rgba(245, 158, 11, 0.7)
+  );
   box-shadow: 0 0 15px 5px rgba(245, 158, 11, 0.3);
 }
 
 .flame-silver .flame {
-  background: linear-gradient(to top, rgba(148, 163, 184, 0), rgba(148, 163, 184, 0.7));
+  background: linear-gradient(
+    to top,
+    rgba(148, 163, 184, 0),
+    rgba(148, 163, 184, 0.7)
+  );
   box-shadow: 0 0 15px 5px rgba(148, 163, 184, 0.3);
 }
 
 .flame-bronze .flame {
-  background: linear-gradient(to top, rgba(180, 83, 9, 0), rgba(180, 83, 9, 0.7));
+  background: linear-gradient(
+    to top,
+    rgba(180, 83, 9, 0),
+    rgba(180, 83, 9, 0.7)
+  );
   box-shadow: 0 0 15px 5px rgba(180, 83, 9, 0.3);
 }
 
@@ -58,4 +70,3 @@
   backdrop-filter: blur(4px);
   background-color: rgba(10, 10, 10, 0.7);
 }
-

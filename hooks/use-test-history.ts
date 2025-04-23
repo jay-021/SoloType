@@ -22,61 +22,67 @@ export interface TestHistoryActions {
 
 /**
  * Hook for fetching and managing typing test history
- * 
+ *
  * @returns Test history state and actions
  */
 export function useTestHistory(): [TestHistoryState, TestHistoryActions] {
   const [results, setResults] = useState<TestResultRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Get authentication state
   const { user, isAuthenticated } = useAuth();
-  
+
   /**
    * Fetch test history from the API
    */
   const fetchHistory = async () => {
-    debugLog('[useTestHistory] Fetching history, auth status:', { isAuthenticated, userId: user?.uid });
-    
+    debugLog('[useTestHistory] Fetching history, auth status:', {
+      isAuthenticated,
+      userId: user?.uid,
+    });
+
     if (!isAuthenticated || !user) {
-      setError("Please log in to view your test history");
+      setError('Please log in to view your test history');
       setIsLoading(false);
       return;
     }
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
+
       debugLog('[useTestHistory] Calling testResultsService.fetchHistory()');
       const historyData = await testResultsService.fetchHistory();
-      debugLog('[useTestHistory] Received history data:', { count: historyData.length });
-      
+      debugLog('[useTestHistory] Received history data:', {
+        count: historyData.length,
+      });
+
       setResults(historyData);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load test history';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to load test history';
       setError(errorMessage);
       errorLog('[useTestHistory] Error fetching test results:', error);
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   // Fetch history when authenticated status changes or component mounts
   useEffect(() => {
     debugLog('[useTestHistory] Auth state changed, fetching history');
     fetchHistory();
   }, [isAuthenticated, user]);
-  
+
   return [
     {
       results,
       isLoading,
-      error
+      error,
     },
     {
-      refreshHistory: fetchHistory
-    }
+      refreshHistory: fetchHistory,
+    },
   ];
-} 
+}
