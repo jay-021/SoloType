@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app"
-import { getAuth, GoogleAuthProvider } from "firebase/auth"
+import { getAuth, GoogleAuthProvider, connectAuthEmulator } from "firebase/auth"
 import { debugLog, errorLog } from '@/lib/logger';
 
 // Validate required environment variables
@@ -31,17 +31,29 @@ const firebaseConfig = {
 
 // Initialize Firebase (prevent multiple initializations)
 let firebaseApp;
+let auth;
+
 try {
   debugLog('[Firebase Client] Initializing Firebase client');
-  firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  
+  if (!getApps().length) {
+    firebaseApp = initializeApp(firebaseConfig);
+    auth = getAuth(firebaseApp);
+    
+    // Connect to auth emulator in development
+    if (process.env.NODE_ENV === 'development') {
+      connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+    }
+  } else {
+    firebaseApp = getApp();
+    auth = getAuth(firebaseApp);
+  }
+  
   debugLog('[Firebase Client] Firebase client initialized successfully');
 } catch (error) {
   errorLog('[Firebase Client] Error initializing Firebase:', error);
   throw error;
 }
-
-// Initialize Firebase Authentication
-const auth = getAuth(firebaseApp);
 
 // Initialize Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
