@@ -13,18 +13,7 @@ const nextConfig = {
     webpackBuildWorker: true,
   },
   output: 'standalone',
-  // Configure SWC for WebContainer environment
-  swcMinify: true,
-  webpack: (config, { isServer }) => {
-    // Force SWC to use the WASM target
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-        '@next/swc-wasm-nodejs': '@next/swc-wasm-web',
-      }
-    }
-    return config
-  }
+  swcMinify: true
 }
 
 export default nextConfig
