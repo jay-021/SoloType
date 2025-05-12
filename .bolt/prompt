@@ -1,0 +1,114 @@
+# Full-Stack Development Standards (React/Next.js, Node.js, TypeScript)
+
+### 🔄 Project Awareness & Context
+
+*   **Always read `PLANNING.md`** at the start of a new conversation to understand the project's architecture, goals, style (including UI/UX), and constraints.
+*   **Check `TASK.md`** before starting a new task. If the task isn’t listed, add it with a brief description and today's date.
+*   **Use consistent naming conventions, file structure, and architecture patterns** as described in `PLANNING.md`.
+    *   **Naming:** `PascalCase` for Components/Types, `camelCase` for variables/functions, `kebab-case` for files/folders (except Component files), `CAPITALIZED_SNAKE_CASE` for constants.
+    *   **Structure:** Feature-based/co-located for Next.js (`app` dir with Route Groups `()` / Private Folders `_`) ; Layered (Controllers/Routes, Services, DAL/Repositories) for Node.js.
+
+### 🧱 Code Structure & Modularity
+
+*   **File Size Limit:** Keep files concise, ideally under **400 lines**. Refactor larger files into smaller modules, components, or hooks.
+*   **Modularity:** Organize code into clearly separated modules/components grouped by feature or responsibility.
+*   **Imports:** Use clear, consistent imports. Prefer named imports over default imports.[1] Use ES Modules (`import`/`export`).
+
+### 🧪 Testing & Reliability
+
+*   **Testing Framework:** Use **Vitest** for unit and integration tests. Use **Playwright** for End-to-End (E2E) tests.
+*   **Test Coverage:** Write unit tests for new features/logic (components, functions, services, API endpoints). Aim for meaningful coverage, focusing on core logic, edge cases, and failure scenarios.
+*   **Test Location:** Co-locate test files with source files (e.g., `*.test.tsx`) or use a `/tests` folder mirroring the `src` structure.
+*   **Updates:** Update relevant tests after modifying existing logic.
+
+### ✅ Task Completion
+
+*   **Mark completed tasks in `TASK.md`** immediately after finishing.
+*   Add new sub-tasks or TODOs discovered during development to `TASK.md` under a “Discovered During Work” section.
+
+### 📎 Style & Conventions (TypeScript, React, Node.js)
+
+*   **Language:** Use **TypeScript** for both frontend and backend.
+*   **Strict Mode:** Enable TypeScript's `strict` mode in `tsconfig.json`. Avoid `any`; use `unknown` with type guards when necessary.
+*   **Linting/Formatting:** Use **ESLint** (with relevant plugins like `@typescript-eslint`, `react`, `react-hooks`, `jsx-a11y`) and **Prettier**. Enforce via pre-commit hooks (Husky/lint-staged) and CI checks.
+*   **React:**
+    *   Use functional components with Hooks.
+    *   Extract reusable logic into custom Hooks (`useMyHook`).
+    *   Prefer Composition over Inheritance.
+    *   Use **Zustand** for most state management needs; use React Context API for simple, infrequent global state (theme, auth).
+*   **Node.js:**
+    *   Implement a layered architecture (Controllers/Routes, Services, DAL/Repositories).
+    *   Use `async/await` for asynchronous operations.
+    *   Implement centralized error handling middleware. Use custom error classes.
+    *   Use a structured logging library (**Winston** or **Pino**) for production; avoid `console.log`. Log errors with stack traces.
+
+### 🎨 UI Implementation (Tailwind, Shadcn UI)
+
+*   **Tailwind CSS:**
+    *   Prioritize utility classes directly in markup. Avoid excessive `@apply`.
+    *   Define design tokens (colors, spacing, etc.) in `tailwind.config.js`.
+    *   Use `prettier-plugin-tailwindcss` for class sorting.
+*   **Shadcn UI:**
+    *   Use the CLI (`npx shadcn@latest add <component>`) to add components to your codebase (`src/components/ui`).
+    *   Customize components by directly editing the copied source files.[27, 29] Leverage included CVA for variants.
+*   **Accessibility (A11y):**
+    *   Meet **WCAG 2.1 Level AA** standards.
+    *   Use semantic HTML. Ensure sufficient color contrast. Provide `alt` text for images. Ensure full keyboard navigability and visible focus states.[32] Use ARIA attributes correctly when necessary. Test with automated tools (Axe) and manual checks (keyboard, screen reader).
+
+### 📡 API Design & Development (RESTful)
+
+*   **Principles:** Adhere to REST principles. Use nouns for resource URLs (e.g., `/api/v1/users`) and standard HTTP methods (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`). Use standard HTTP status codes correctly.
+*   **Contracts & Docs:** Define APIs using **OpenAPI Specification v3**. Generate interactive documentation (Swagger UI/Redoc) from the spec.
+*   **Validation:** **Validate all incoming data** (params, query, body) server-side against the OpenAPI schema using libraries like Zod or Joi. Return `400 Bad Request` on failure.
+*   **Versioning:** Use **URL Path Versioning** (e.g., `/api/v1/...`). Follow Semantic Versioning for changes
+*   **Security:** Enforce HTTPS. Use robust Authentication (JWT or OAuth 2.0) and Authorization (RBAC/ABAC). Implement Rate Limiting. Configure CORS correctly. Prevent sensitive data exposure.
+
+### 💾 Data Persistence (NoSQL - MongoDB / Firebase)
+
+*   **MongoDB Schema:**
+    *   Design schemas based on application access patterns.
+    *   **Favor embedding** related data unless there's a compelling reason (e.g., large arrays, 16MB limit, independent access needed). Use references (`_id`) for one-to-many (large) or many-to-many relationships.
+    *   Use denormalization strategically for read performance.
+    *   Create indexes on frequently queried/sorted fields. Use compound indexes where appropriate.
+*   **MongoDB Connections (Node.js):**
+    *   Use the driver's built-in **connection pooling**. Create **one single `MongoClient` instance** per application lifecycle and reuse it.
+    *   Configure pool size (`maxPoolSize`, `minPoolSize`) based on load.
+*   **Firebase Firestore Security:**
+    *   Define **Security Rules** to control access. Start with default-deny (`allow read, write: if false;`).
+    *   Use `request.auth.uid` for user-specific access.
+    *   Use granular operations (`get`, `list`, `create`, `update`, `delete`).
+    *   Validate data within rules (types, ranges, required fields).
+    *   Test rules using the Emulator Suite and Simulator. Deploy rules via Firebase CLI.
+
+### ⚙️ DevOps & Cloud (Docker, GitHub Actions)
+
+*   **Docker:**
+    *   Use **multi-stage builds** for production images: build stage with dev dependencies, final stage with minimal base image (e.g., `node:XX-alpine`) copying only necessary artifacts (`COPY --from=...`).
+    *   Use `.dockerignore` to exclude unnecessary files. Optimize layer caching.
+    *   For Next.js, consider `output: 'standalone'` in `next.config.js` for smaller images.
+*   **CI/CD (GitHub Actions):**
+    *   Define workflows in `.github/workflows/`. Trigger on `pull_request` (CI) and `push` to `main` (CD).
+    *   **CI Pipeline:** Lint, Format Check, Test (Unit, Integration, optionally E2E), Build.
+    *   **CD Pipeline:** Build Docker images, Push to registry (Docker Hub, ECR, GCR, etc.), Deploy to cloud (using provider CLI/actions, Kubernetes `kubectl`, Vercel/Firebase CLI)
+*   **Cloud & Config:**
+    *   Consider Infrastructure as Code (IaC) (Terraform).
+    *   Use **environment variables** for configuration (API keys, DB strings). Do NOT hardcode secrets. Load from the environment or `.env` files (add `.env` to `.gitignore`).
+*   **Secrets Management:**
+    *   Use **GitHub Actions Secrets** for CI/CD pipeline credentials (cloud keys, registry tokens).
+    *   Use **Cloud Provider Secret Managers** (AWS Secrets Manager, Azure Key Vault, GCP Secret Manager) for application runtime secrets. Fetch secrets at runtime, don't bake into images.
+
+### 📚 Documentation & Explainability
+
+*   **`README.md`:** Maintain a comprehensive `README.md` with project overview, setup, running instructions, key scripts, architecture summary, and contribution guidelines.
+*   **Code Docs:** Use **TSDoc** for documenting exported functions, classes, types, interfaces, and complex logic. Explain the *why*, not just the *what*.
+*   **Inline Comments:** Comment non-obvious code sections. Use `# Reason:` or similar for complex logic explanations [User's example].
+
+### 🧠 AI Behavior Rules (MUST)
+
+*   **Adhere to Standards:** Strictly follow all guidelines in this document.
+*   **Context is Key:** Always refer to `PLANNING.md` and `TASK.md`. Ask clarifying questions if context is missing or ambiguous.
+*   **Verify:** Never hallucinate libraries, functions, or file paths. Confirm existence before use.
+*   **Generate Tests:** Create appropriate Vitest/Playwright tests for any new code.
+*   **Modify Carefully:** Only change code related to the assigned task. Do not delete/overwrite without explicit instruction.
+*   **Use PNPM:** Only use PNPM, do not use NPM.
+*   **Do not run two commands at the same time in terminal** Only run one command in one input.
